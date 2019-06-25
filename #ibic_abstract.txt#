@@ -1,0 +1,27 @@
+Evidence for a General-Purpose Functional Architecture in the Human Connectome
+Data
+
+by Andrea Stocco
+
+The Common Model of Cognition is a recently proposed, minimal,
+architecture that captures the lessons learned from developing
+intelligent agents in the fields of artificial intelligence, robotics,
+and cognitive architectures. Because of its generality, it has been
+suggested that the CMC also explains the human cognitive
+architectures, and, henceforth, must be true of the brain. To test
+this hypothesis, the functional components of the CMC were
+identified with  brain regions, and the
+hypothetical connectivity of the CMC was translated into predicted
+effective connectivity patterns. The resulting model was implemented
+using Dynamic Causal Modeling, and compared against four alternative,
+hypothetical brain architectures that had been derived from the literature (two
+hierarchical architectures and two hub-and-spoke architectures)
+Using a Bayesian approach, the five models were compared across six
+task-related fMRI dataset from the Human Connectome Project, spanning
+the domains of emotional processing, reward processing, language
+understanding, social reasoning, relational reasoning, and working
+memory updating. The results show that, in all cases, the CMC vastly
+outperforms all other architectures. Furthermore, the internal
+parameters of the CMC were highly correlated within individuals across
+different tasks, suggesting that the CMC can be used to capture
+both the common architecture and individual variation within it.

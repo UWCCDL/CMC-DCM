@@ -1,0 +1,5 @@
+Procedural	-14,12,6	6	dcm_results	3	3	0.50	1
+WM		-52,6,32	8	dcm_results	3	3	0.50	1
+LTM		-54,0,-14	8	dcm_results	3	3	0.50	1
+Perception	-38,-84,-4	8	dcm_results	3	3	0.50	1
+Action 		-40,-18,52	8	dcm_results	3	3	0.50	1
