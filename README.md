@@ -6,7 +6,7 @@ This project aims to examine the feasibility of the Common Model of Cognition as
 
 The Common Model of Cognition (CMC, formerly known as the "Standard Model of the Mind") is an abstract blueprint of how basic cognitive functionalities can be put together to support human and human-like intelligence:
 
-![cmc.png]
+![CMC](cmc.png)
 
 
 ## Analysis of the Human Connectome Project Data
