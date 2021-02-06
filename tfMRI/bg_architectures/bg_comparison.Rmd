@@ -1,0 +1,201 @@
+---
+title: "BG Comparison"
+author: "Andrea Stocco"
+date: "1/31/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(ggthemes)
+library(ppcor)
+library(reshape2)
+library(gglasso)
+library(glmnet)
+library(ggsci)
+library(viridis)
+library(kableExtra)
+library(xtable)
+```
+
+
+## Load Data
+
+```{r}
+ll <- read_tsv("bg_models_ll.tsv")
+
+lll <- ll %>% 
+  pivot_longer(cols=c("Direct", "Modulatory", "Mixed"), 
+               names_to = "Model",
+               values_to = "RawLL") %>%
+  mutate(LogLikelihood = 10000*RawLL) %>%
+  group_by(Task) %>%
+  mutate(RelativeLL = LogLikelihood - min(LogLikelihood))
+```
+
+Now, we rename the models
+
+```{r}
+# lll$Model <- recode(lll$Model, 
+#                     Direct = "Direct", 
+#                     Mixed = "Complete",
+#                     Modulatory = "Modulatory")
+
+lll$Task <- recode(lll$Task, 
+                    Emotion = "Emotion Processing", 
+                    Gambling = "Incentive Processing",
+                    Language = "Language and Math",
+                   Social = "Social Cognition",
+                   Relational = "Relational Reasoning",
+                   WM="Working Memory"
+                   )
+
+```
+Let's visualize the results
+
+```{r}
+pal <- pal_aaas()
+z<- pal(3)[c(3,1,2)]
+
+lll$Model <- factor(lll$Model,
+                    levels = c("Direct", "Modulatory", "Mixed"))
+
+ggplot(lll, aes(x=Model, y=RelativeLL)) +
+  geom_col(aes(fill=Model)) +
+  facet_wrap(~Task, scales="free_y", ncol = 2) +
+  scale_fill_aaas() +
+  theme_pander() +
+  ggtitle("Log-likelihoods Across Tasks") +
+  ylab("Relative Log-likelihood") +
+  theme(axis.text.x = element_text(angle=45, hjust=1, size = 8)) +
+  theme(legend.position="none")
+```
+
+## Bayes Factors
+
+```{r}
+bf <- ll %>%
+  mutate(lambda1 = 10000*(Mixed - Modulatory),
+         lambda2 = 10000*(Mixed - Direct)) %>%
+  mutate(BF1 = exp(lambda1),
+         BF2 = exp(lambda2)) %>%
+  dplyr::select(Task, lambda1, lambda2, BF1, BF2)
+```
+
+And now we can see the relative BF comparisons between the Direct and Modulatory
+models vs. the Mixed model:
+
+```{r}
+bf %>%
+  dplyr::select(Task, BF1, BF2) %>%
+  xtable() %>%
+  kable(digits = 5) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+## Accounting for the complexity of the Mixed Model with Wilks' Theorem  
+
+Since the three models differ also in terms of the number of parameters, it is possible that the Mixed model’s greater likelihood is due to it simply having more degrees of freedom to fit the data. Although common corrections can be applied (such as BIC and AIC) to provide a correction for the number of parameters, the fact that the Direct and Modulatory models are nested within the Mixed model allows us to use Wilks’ theorem (1938), which accounts for the different number of  parameters and translates the log-likelihood difference into interpretable p-values. The theorem states that, for two models of which one is nested, the probability that the fit of the more complex is due to chance (its p-value) approximates the probability of obtaining the value of 2λ (twice the log-likelihood difference) in a χ2 distribution with degrees of freedom corresponding to the difference in the number of parameters. Using this theorem, we calculated the probability that the greater fit of the Mixed model is due to chance (note that this comparison accounts for the greater complexity of the Mixed model in the χ2 distribution). Figure 5 illustrates the performance of both models against the Mixed model; the dashed lines correspond to the differences in log-likelihood of each model (i.e, 2λ) against the Mixed model, while the shaded areas depict the corresponding χ2 distributions (note that the distributions are the same for all tasks, but the scale of the x-axis changes to accommodate the likelihood differences). All of the differences in log-likelihood are all far to the right of χ2 distributions, corresponding to p < .0001 for all comparisons in all tasks. This implies that the Mixed model’s superiority cannot be simply due to its greater complexity. 
+
+```{r}
+lbf <- pivot_longer(bf,
+                    cols=c("lambda1", "lambda2"), 
+                    names_to = "Model",
+                    values_to = "Lambda") %>%
+  dplyr::select(Task, Model, Lambda)
+
+lbf$Model <- recode(lbf$Model, 
+                     lambda1 = "Modulatory",
+                     lambda2 = "Direct")
+
+X<-c()
+Y<-c()
+M<-c()
+P<-c()
+
+for (task in unique(bf$Task)) {
+  xmax = max(bf$lambda1[bf$Task==task], 
+             bf$lambda2[bf$Task==task])
+  xmax <- xmax * 1.1
+  x <- 1:xmax
+  y1 <- dchisq(x, df=10)
+  y2 <- dchisq(x, df=5)
+  y1[0] <- 0
+  y2[1] <- 0
+  x <- c(x, x)
+  y <- c(y1, y2)
+  m <- c(rep("Modulatory", xmax),
+         rep("Direct", xmax))
+  p <- rep(task, length(m))
+  X <- c(X, x)
+  Y <- c(Y, y)
+  M <- c(M, m)
+  P <- c(P, p)
+} 
+
+lwilks <- as_tibble(data.frame(x=X, y=Y, Model = M, Task = P))
+
+
+# x <- 0:5000
+# y1 <- dchisq(x, 10)
+# y2 <- dchisq(x, 5)
+
+#wilks <- as_tibble(data.frame(x=x, 
+#                               "Modulatory" =y2, "Direct" = y1))
+# lwilks <- pivot_longer(wilks,
+#                        cols=c("Modulatory", "Direct"),
+#                        names_to=c("Against"),
+#                        values_to = "y")
+# 
+
+lbf$Task <- recode(lbf$Task, 
+                    Emotion = "Emotion Processing", 
+                    Gambling = "Incentive Processing",
+                    Language = "Language and Math",
+                   Social = "Social Cognition",
+                   Relational = "Relational Reasoning",
+                   WM="Working Memory"
+                   )
+
+lwilks$Task <- recode(lwilks$Task, 
+                    Emotion = "Emotion Processing", 
+                    Gambling = "Incentive Processing",
+                    Language = "Language and Math",
+                   Social = "Social Cognition",
+                   Relational = "Relational Reasoning",
+                   WM="Working Memory"
+                   )
+
+
+ggplot(lwilks, aes(x=x, y=y, col=Model)) +
+  geom_line(alpha=.5) +
+  facet_wrap(~Task, scale="free_x") +
+  theme_pander()
+
+
+ggplot(lbf, aes(x=Lambda, y=Lambda)) +
+  geom_segment(aes(x=Lambda, y=0, 
+                   xend=Lambda, yend=0.17, 
+                   col=Model),
+               linetype="dashed") +
+  facet_wrap(~Task, scales="free_x", ncol=2) +
+  #geom_line(data=lwilks, aes(x=x, y=y, col=Against, group=Against)) +
+  #geom_area(data=lwilks, stat="identity", 
+  #          mapping=aes(x=lwilks$x, y=lwilks$y, fill=Against),
+  #          alpha=0.6) +
+  geom_polygon(data=lwilks, aes(x=x, y=y, fill=Model), alpha=0.5) +
+  #geom_ribbon(data=lwilks, aes(x=x, ymin=0, ymax=y, fill=Against)) +
+  scale_color_aaas() +
+  scale_fill_aaas() +
+  theme_pander() +
+  ggtitle("Comparisons Against Mixed Model") +
+  ylab("Probability Density") +
+  xlab(expression(2*lambda)) +
+  theme(legend.position = "bottom")
+
+
+```
