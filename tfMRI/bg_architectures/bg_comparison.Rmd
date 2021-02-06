@@ -1,8 +1,20 @@
 ---
-title: "BG Comparison"
-author: "Andrea Stocco"
+title: "Comparison of Different BG Architectures in the CMC"
+author: "Andrea Stocco, Catherine Sibert, Holly Hake"
 date: "1/31/2021"
-output: html_document
+output:
+  html_document:
+    code_folding: hide
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+  word_document:
+    toc: yes
+    toc_depth: '3'
 ---
 
 ```{r setup, include=FALSE}
@@ -22,12 +34,23 @@ library(kableExtra)
 library(xtable)
 ```
 
+Here we will compare how three different architectures of the Basal Ganglia (BG) fit the task-based data from the Human Connectome Project with the Common Model architecture. 
 
 ## Load Data
 
-```{r}
-ll <- read_tsv("bg_models_ll.tsv")
+First, we load the data.
 
+```{r}
+ll <- read_tsv("bg_models_ll.tsv", 
+               col_types=cols(Task = col_character(),
+                              Direct = col_double(),
+                              Modulatory = col_double(),
+                              Mixed = col_double()))
+```
+
+The log-likelihood values are expressed in exponential format, with the exponent being 4. So we need to multiply all value by 10,000. Also, because the log-likelihoods vary dramatically by task, we are going to transform them into relative values:
+
+```{r}
 lll <- ll %>% 
   pivot_longer(cols=c("Direct", "Modulatory", "Mixed"), 
                names_to = "Model",
@@ -37,25 +60,23 @@ lll <- ll %>%
   mutate(RelativeLL = LogLikelihood - min(LogLikelihood))
 ```
 
-Now, we rename the models
+Then, we rename the tasks so they are displayed with the "official" HCP label.
 
 ```{r}
-# lll$Model <- recode(lll$Model, 
-#                     Direct = "Direct", 
-#                     Mixed = "Complete",
-#                     Modulatory = "Modulatory")
-
 lll$Task <- recode(lll$Task, 
-                    Emotion = "Emotion Processing", 
-                    Gambling = "Incentive Processing",
-                    Language = "Language and Math",
+                   Emotion = "Emotion Processing", 
+                   Gambling = "Incentive Processing",
+                   Language = "Language and Math",
                    Social = "Social Cognition",
                    Relational = "Relational Reasoning",
                    WM="Working Memory"
-                   )
+)
 
 ```
-Let's visualize the results
+
+## Visualize Log-Likelihoods.
+
+After doing so, we can visualize the results. We are going to assign to each model a color in the AAAS color palette.
 
 ```{r}
 pal <- pal_aaas()
@@ -77,6 +98,8 @@ ggplot(lll, aes(x=Model, y=RelativeLL)) +
 
 ## Bayes Factors
 
+The Mixed model emerges as the best model. But is the difference significance? To objectively measure the difference in likelihoods, we are going to use Bayes Factors (BF). The BF for a model comparison They can be calculated from the difference in relative log-likelihoods (technically called $\lambda$). 
+
 ```{r}
 bf <- ll %>%
   mutate(lambda1 = 10000*(Mixed - Modulatory),
@@ -87,7 +110,7 @@ bf <- ll %>%
 ```
 
 And now we can see the relative BF comparisons between the Direct and Modulatory
-models vs. the Mixed model:
+models vs. the Mixed model. When BF > 100, it is "decisive" evidence for the better model in the comparison (according to Kass & Raftery, 1995). It is easy to see that, in all tasks, the BF largely advantages the Mixed model.
 
 ```{r}
 bf %>%
@@ -99,19 +122,13 @@ bf %>%
 
 ## Accounting for the complexity of the Mixed Model with Wilks' Theorem  
 
-Since the three models differ also in terms of the number of parameters, it is possible that the Mixed model’s greater likelihood is due to it simply having more degrees of freedom to fit the data. Although common corrections can be applied (such as BIC and AIC) to provide a correction for the number of parameters, the fact that the Direct and Modulatory models are nested within the Mixed model allows us to use Wilks’ theorem (1938), which accounts for the different number of  parameters and translates the log-likelihood difference into interpretable p-values. The theorem states that, for two models of which one is nested, the probability that the fit of the more complex is due to chance (its p-value) approximates the probability of obtaining the value of 2λ (twice the log-likelihood difference) in a χ2 distribution with degrees of freedom corresponding to the difference in the number of parameters. Using this theorem, we calculated the probability that the greater fit of the Mixed model is due to chance (note that this comparison accounts for the greater complexity of the Mixed model in the χ2 distribution). Figure 5 illustrates the performance of both models against the Mixed model; the dashed lines correspond to the differences in log-likelihood of each model (i.e, 2λ) against the Mixed model, while the shaded areas depict the corresponding χ2 distributions (note that the distributions are the same for all tasks, but the scale of the x-axis changes to accommodate the likelihood differences). All of the differences in log-likelihood are all far to the right of χ2 distributions, corresponding to p < .0001 for all comparisons in all tasks. This implies that the Mixed model’s superiority cannot be simply due to its greater complexity. 
+Since the three models differ also in terms of the number of parameters, it is possible that the Mixed model’s greater likelihood is due to it simply having more degrees of freedom to fit the data. Although common corrections can be applied (such as BIC and AIC) to provide a correction for the number of parameters, the fact that the Direct and Modulatory models are nested within the Mixed model allows us to use Wilks’ theorem (1938), which accounts for the different number of  parameters and translates the log-likelihood difference into interpretable p-values. The theorem states that, for two models of which one is nested, the probability that the fit of the more complex is due to chance (its p-value) approximates the probability of obtaining the value of 2λ (twice the log-likelihood difference) in a χ2 distribution with degrees of freedom corresponding to the difference in the number of parameters. Using this theorem, we calculated the probability that the greater fit of the Mixed model is due to chance (note that this comparison accounts for the greater complexity of the Mixed model in the χ2 distribution).
+
+To do, we first need to calculate the χ2 distributions corresponding to the two comparisons, Mixed vs. Modulatory and Mixed vs. Direct. The modulatory model has one connection less than the Mixed model (from BG to PFC), while the Direct has two connections less (the two modulatory ones). For every connection, we need to count 5 different parameters, corresponding to the strength (in Hz) of the connection itself plus four biological parameters. So, the degrees of freedom are 5 for the Modulatory comparison and 10 for the Direct comparison. 
+
+Now, we create curves for both distributions for every task, with the _x_-axis going from 0 to the max of the 2λ mark.
 
 ```{r}
-lbf <- pivot_longer(bf,
-                    cols=c("lambda1", "lambda2"), 
-                    names_to = "Model",
-                    values_to = "Lambda") %>%
-  dplyr::select(Task, Model, Lambda)
-
-lbf$Model <- recode(lbf$Model, 
-                     lambda1 = "Modulatory",
-                     lambda2 = "Direct")
-
 X<-c()
 Y<-c()
 M<-c()
@@ -139,18 +156,41 @@ for (task in unique(bf$Task)) {
 
 lwilks <- as_tibble(data.frame(x=X, y=Y, Model = M, Task = P))
 
+lwilks$Task <- recode(lwilks$Task, 
+                    Emotion = "Emotion Processing", 
+                    Gambling = "Incentive Processing",
+                    Language = "Language and Math",
+                   Social = "Social Cognition",
+                   Relational = "Relational Reasoning",
+                   WM="Working Memory"
+                   )
+```
+And this is what the distributions look like, on the correct scale to visualize the 2λ mark in every task.
 
-# x <- 0:5000
-# y1 <- dchisq(x, 10)
-# y2 <- dchisq(x, 5)
+```{r}
+ggplot(lwilks, aes(x=x, y=y, col=Model)) +
+  geom_line(alpha=.5) +
+  scale_color_aaas() +
+  ggtitle(expression(paste(chi^2, " Distributions"))) +
+  facet_wrap(~Task, scale="free_x") +
+  theme_pander()
 
-#wilks <- as_tibble(data.frame(x=x, 
-#                               "Modulatory" =y2, "Direct" = y1))
-# lwilks <- pivot_longer(wilks,
-#                        cols=c("Modulatory", "Direct"),
-#                        names_to=c("Against"),
-#                        values_to = "y")
-# 
+```
+
+
+After doing this, we can finally visualize the comparisons by overlaying the 2λ marks (of every model (the differences in log-likelihood of the Direct and Modulatory model against the Mixed one) over the corresponding $\chi^2$ distributions. To do so, first we recode put the data frame in long format, and correctly rename tasks and models.
+
+```{r}
+lbf <- pivot_longer(bf,
+                    cols=c("lambda1", "lambda2"), 
+                    names_to = "Model",
+                    values_to = "Lambda") %>%
+  dplyr::select(Task, Model, Lambda)
+
+lbf$Model <- recode(lbf$Model, 
+                     lambda1 = "Modulatory",
+                     lambda2 = "Direct")
+
 
 lbf$Task <- recode(lbf$Task, 
                     Emotion = "Emotion Processing", 
@@ -160,35 +200,19 @@ lbf$Task <- recode(lbf$Task,
                    Relational = "Relational Reasoning",
                    WM="Working Memory"
                    )
+```
 
-lwilks$Task <- recode(lwilks$Task, 
-                    Emotion = "Emotion Processing", 
-                    Gambling = "Incentive Processing",
-                    Language = "Language and Math",
-                   Social = "Social Cognition",
-                   Relational = "Relational Reasoning",
-                   WM="Working Memory"
-                   )
+Then we plot the figure. The following figure illustrates the performance of both models against the Mixed model; the dashed lines correspond to the differences in log-likelihood of each model (i.e, 2λ) against the Mixed model, while the shaded areas depict the corresponding χ2 distributions (note that the distributions are the same for all tasks, but the scale of the x-axis changes to accommodate the likelihood differences). All of the differences in log-likelihood are all far to the right of χ2 distributions, corresponding to _p_ < .0001 for all comparisons in all tasks. This implies that the Mixed model’s superiority cannot be simply due to its greater complexity. 
 
 
-ggplot(lwilks, aes(x=x, y=y, col=Model)) +
-  geom_line(alpha=.5) +
-  facet_wrap(~Task, scale="free_x") +
-  theme_pander()
-
-
+```{r}
 ggplot(lbf, aes(x=Lambda, y=Lambda)) +
   geom_segment(aes(x=Lambda, y=0, 
                    xend=Lambda, yend=0.17, 
                    col=Model),
                linetype="dashed") +
   facet_wrap(~Task, scales="free_x", ncol=2) +
-  #geom_line(data=lwilks, aes(x=x, y=y, col=Against, group=Against)) +
-  #geom_area(data=lwilks, stat="identity", 
-  #          mapping=aes(x=lwilks$x, y=lwilks$y, fill=Against),
-  #          alpha=0.6) +
   geom_polygon(data=lwilks, aes(x=x, y=y, fill=Model), alpha=0.5) +
-  #geom_ribbon(data=lwilks, aes(x=x, ymin=0, ymax=y, fill=Against)) +
   scale_color_aaas() +
   scale_fill_aaas() +
   theme_pander() +
@@ -196,6 +220,4 @@ ggplot(lbf, aes(x=Lambda, y=Lambda)) +
   ylab("Probability Density") +
   xlab(expression(2*lambda)) +
   theme(legend.position = "bottom")
-
-
 ```
