@@ -1,0 +1,112 @@
+---
+title: "Granger"
+author: "Andrea Stocco"
+date: "4/3/2021"
+output: html_document
+---
+
+```{r}
+library(vars)
+library(tidyverse)
+library(ggplot2)
+```
+
+Granger causality analysis of WM data.
+
+Let's see if we can get CMC from it?
+
+```{r}
+VOIs <- c('Action', 
+          'LTM', 
+          'Perception', 
+          'Procedural', 
+          'WM')
+S <- length(grep("_cmc.txt", dir())) # Num of subjects
+R <- length(VOIs) # Num ROIs
+SP <- matrix(rep(0, R*R*S), nrow =  S )
+```
+
+# First, perform GC analysis
+
+First, we need to perform GC analysis on all data.
+
+```{r}
+np <- c()
+j <- 1
+for (sub in dir()[grep("sub-", dir())]) {
+  #print(file)
+  M <-read_tsv(paste(sub, "cmc.txt", sep="/"), 
+               col_names = VOIs, 
+               col_types = cols(
+                 Action = col_double(),
+                 LTM = col_double(),
+                 Perception = col_double(),
+                 Procedural = col_double(),
+                 WM = col_double()
+               ))
+  
+  minp <- min(VARselect(M)$selection)
+  np <- c(np, minp)
+  
+  gm <- VAR(M, p = minp)
+  
+  # Create To/From matrices
+  E <- matrix(rep(0, R*R), nrow=R)
+  P <- matrix(rep(0, R*R), nrow=R)
+  coef <- coefficients(gm)
+  
+  for (v in 1:R) {
+    voi <- VOIs[v]
+    
+    E[,v] <- coef[[v]][,1][1:R]  # estimates
+    P[,v] <- coef[[v]][,4][1:R]  # p-values
+  }
+  
+  # Save
+  V <- c(P)
+  SP[j,] <- V
+  
+  j <- j+1
+}
+hist(np, breaks=4)
+```
+
+Now, calculate the final p-values
+```{r}
+
+Mode <- function(codes) {
+  which.max(tabulate(codes))
+}
+
+fisher.chi <- function(pvals) {
+    logsum <- -2 * sum(log(pvals))
+    1 - pchisq(logsum, df = (2 * length(pvals)))
+}
+
+friston.test <- function(pvals) {
+    max(pvals) ** length(pvals)
+}
+
+nichols.test <- function(pvals) {
+    max(pvals)
+}
+
+tippet.test <- function(pvals) {
+  s <- min(pvals)
+  1 - (1-s)**length(pvals)
+}
+
+finalP <- apply(SP, MARGIN = 2, FUN = tippet.test)
+
+image(matrix(finalP, nrow = 5))
+image(sign(matrix(finalP, nrow=5) - 0.05))
+```
+
+Sign test
+```{r}
+sSP <- sign(SP - 0.05)  
+asSP <- apply(sSP, MARGIN = 2, FUN = sum)
+architecture <- matrix(sign(asSP), nrow=5)
+architecture[architecture == 1] <- NA
+image(architecture)
+```
