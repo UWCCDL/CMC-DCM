@@ -1,0 +1,14 @@
+---
+title: "Granger"
+author: "Andrea Stocco"
+date: "4/3/2021"
+output: html_document
+---
+
+Granger causality analysis of WM data.
+
+Let's see if we can get CMC from it?
+
+# First, perform GC analysis
+
+First, we need to perform GC analysis on all data.
