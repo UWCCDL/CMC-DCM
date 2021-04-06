@@ -1,5 +1,5 @@
 ---
-title: "Granger"
+title: "Granger Causality Analysis"
 author: "Andrea Stocco"
 date: "4/3/2021"
 output: html_document
@@ -235,7 +235,6 @@ architecture <- group_data %>%
   group_by(To, From) %>%
   summarise(Link = if_else(sum(Link) >= 2, 1, 0)) %>%
   add_column(Connectivity = "Empirical")
-
 ```
 
 And now we can compare it to the CMC theory.
