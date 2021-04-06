@@ -2,7 +2,19 @@
 title: "Granger Causality Analysis"
 author: "Andrea Stocco"
 date: "4/3/2021"
-output: html_document
+output:
+  html_document:
+    code_folding: hide
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+  word_document:
+    toc: yes
+    toc_depth: '6'
 ---
 
 ```{r}
@@ -12,7 +24,10 @@ library(ggthemes)
 library(ggplot2)
 ```
 
-Granger causality analysis of all data data.
+# Granger causality analysis of all data data.
+
+## Theory
+
 
 Let's see if we can get CMC from it?
 
@@ -115,8 +130,8 @@ ggplot(data, aes(x=Time, y=BOLD, col=Region)) +
   facet_wrap(~ Region) +
   theme_pander()
 
-rownames(P) <- VOIs
-colnames(P) <- VOIs
+#rownames(P) <- VOIs
+#colnames(P) <- VOIs
 ```
 
 And here are examples of the _p_ values associated to each connection, in each participant, for each task.
