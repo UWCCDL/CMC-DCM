@@ -1,0 +1,216 @@
+---
+title: "Granger"
+author: "Andrea Stocco"
+date: "4/3/2021"
+output: html_document
+---
+
+```{r}
+library(vars)
+library(tidyverse)
+library(ggthemes)
+library(ggplot2)
+```
+
+Granger causality analysis of WM data.
+
+Let's see if we can get CMC from it?
+
+```{r}
+VOIs <- c('Action', 
+          'LTM', 
+          'Perception', 
+          'Procedural', 
+          'WM')
+S <- length(grep("sub-", dir())) # Num of subjects
+R <- length(VOIs) # Num ROIs
+SP <- matrix(rep(0, R*R*S), nrow =  S )
+```
+
+# First, perform GC analysis
+
+First, we need to perform GC analysis on all data.
+
+```{r}
+np <- c()
+df <- NULL
+
+for (sub in dir()[grep("sub-", dir())]) {
+  #print(file)
+  M <-read_tsv(paste(sub, "cmc.txt", sep="/"), 
+               col_names = VOIs, 
+               col_types = cols(
+                 Action = col_double(),
+                 LTM = col_double(),
+                 Perception = col_double(),
+                 Procedural = col_double(),
+                 WM = col_double()
+               ))
+  
+  # Select the best lag, using BIC or "Schwartz Criterion"
+  
+  lag <- VARselect(M)$selection[3]
+  
+  np <- c(np, lag)
+  
+  gm <- VAR(M, type="none", p = lag)
+  
+  # Create To/From matrices
+  #E <- matrix(rep(0, R*R), nrow=R)
+  #P <- matrix(rep(0, R*R), nrow=R)
+  coef <- coefficients(gm)
+  
+  
+  for (v in 1:R) {
+    voi <- VOIs[v]
+    
+    Estimates <- coef[[v]][,1][1 : (R * lag)]  # estimates
+    Pvalues <- coef[[v]][,4][1 : (R * lag)]  # p-values
+    
+    subdf <- data.frame(Subject = rep(sub, R*lag),
+                        To = rep(voi, R*lag),
+                        From = rep(VOIs, lag),
+                        Lag = sort(rep(1:lag, R)),
+                        Estimate = Estimates,
+                        p = Pvalues)
+    if (is.null(df)) {
+      df <- subdf
+    } else {
+      df <- rbind(df, subdf)
+    }
+  }
+}
+
+granger_data_complete <- as_tibble(df)
+```
+
+Now, because we have different Lags, we are going to pick the smallest _p_ value for each region across all lags
+
+```{r}
+
+granger_data <- granger_data_complete %>%
+  group_by(Subject, To, From) %>%
+  summarise(p = min(p),
+            Estimate = mean(Estimate)) %>%
+  mutate(Link = if_else(p < 0.05, 1, 0))
+```
+Visualize some data
+
+```{r, fig.width=7, fig.height=5}
+
+data <- M %>%
+  add_column(Time = 1:nrow(M)) %>%
+  pivot_longer(cols = c(Action, LTM, Perception, Procedural, WM),
+               names_to = "Region",
+               values_to = "BOLD")
+
+ggplot(data, aes(x=Time, y=BOLD, col=Region)) +
+  geom_line() +
+  scale_color_brewer(palette="Set2") +
+  facet_wrap(~ Region) +
+  theme_pander()
+
+rownames(P) <- VOIs
+colnames(P) <- VOIs
+```
+
+```{r, fig.width=15, fig.height=15}
+ggplot(granger_data, aes(x=From, y=To)) +
+  geom_tile(aes(fill = p), col="white") +
+  scale_fill_viridis_c(option="inferno") +
+  ggtitle("Probability of Connection") +
+  coord_equal(ratio = 1) +
+  facet_wrap(~ Subject) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_pander() 
+
+ggplot(granger_data, aes(x=From, y=To)) +
+  geom_tile(aes(fill=Link), col="white") +
+  scale_fill_viridis_c(option="inferno", end = 0.8) +
+  ggtitle("Inferred Architecture") +
+  facet_wrap(~Subject) +
+  coord_equal(ratio = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_pander() 
+```
+
+```{r}
+lags <- granger_data_complete %>%
+  group_by(Subject) %>%
+  summarise(Lag = max(Lag))
+
+ggplot(lags, aes(x=Lag)) +
+  geom_histogram(col="white", binwidth = 1) +
+  theme_pander()
+```
+
+Now, calculate the final p-values
+```{r}
+
+Mode <- function(codes) {
+  which.max(tabulate(codes))
+}
+
+fisher.chi <- function(pvals) {
+    logsum <- -2 * sum(log(pvals))
+    1 - pchisq(logsum, df = (2 * length(pvals)))
+}
+
+friston.test <- function(pvals) {
+    max(pvals) ** length(pvals)
+}
+
+nichols.test <- function(pvals) {
+    max(pvals)
+}
+
+tippet.test <- function(pvals) {
+  s <- min(pvals)
+  1 - (1-s)**length(pvals)
+}
+
+binom.test.cmc <- function(binvals) {
+  binom.test(sum(binvals), 
+             n=length(binvals),
+             alternative = "less")$p.value
+}
+```
+
+Different Functional Aggregations
+
+```{r}
+group_data <- granger_data %>%
+  group_by(To, From) %>%
+  summarize(p.nichols = nichols.test(p),
+            p.friston = friston.test(p),
+            Plink = binom.test.cmc(Link),
+            Sign = sum(2*Link - 1)) %>%
+  mutate(Link = if_else(Plink > 0.95, 1, 0),
+         FristonLink = if_else(p.friston < 0.05, 1, 0))
+```
+
+Now plot
+
+```{r}
+ggplot(group_data, aes(x=From, y=To)) +
+  geom_tile(aes(fill=Plink), col="white") +
+  scale_fill_viridis_c(option="inferno", end = 0.8) +
+  ggtitle("Group-Level Inferred Architecture") +
+  coord_equal(ratio = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_pander() 
+```
+
+
+Binomial
+```{r}
+
+
+bSP <- (1 + sign(SP - 0.05))/2
+abSP <- apply(bSP, MARGIN = 2, 
+              FUN = binom.test.cmc)
+
+architecture <- matrix(sign(abSP-0.05), nrow=5)
+#architecture[architecture == 1] <- NA
+image(architecture)
+```
