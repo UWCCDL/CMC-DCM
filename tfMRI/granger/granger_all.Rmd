@@ -41,7 +41,10 @@ VOIs <- c('Action',
 TASKS <- c('Gambling',
            'Relational',
            'Social',
-           'WM')
+           'WM',
+           'Language',
+           'Emotion')
+
 #S <- length(grep("sub-", dir())) # Num of subjects
 R <- length(VOIs) # Num ROIs
 #SP <- matrix(rep(0, R*R*S), nrow =  S )
@@ -52,7 +55,7 @@ R <- length(VOIs) # Num ROIs
 First, we need to perform GC analysis on all data.
 
 ```{r}
-np <- c()
+# np <- c()
 df <- NULL
 
 for (task in TASKS) {
@@ -73,9 +76,6 @@ for (task in TASKS) {
     
     gm <- VAR(M, type="none", p = lag)
     
-    # Create To/From matrices
-    #E <- matrix(rep(0, R*R), nrow=R)
-    #P <- matrix(rep(0, R*R), nrow=R)
     coef <- coefficients(gm)
     
     for (v in 1:R) {
@@ -231,12 +231,23 @@ group_data <- granger_data %>%
 Here are the task-level functional architectures.
 
 ```{r}
+
+ggplot(group_data,
+       aes(x=From, y=To)) +
+  geom_tile(aes(fill=Plink), col="white") +
+  facet_wrap(~ Task) +
+  scale_fill_viridis_c(option="inferno", end = 0.8) +
+  ggtitle("Task-Specific Architectures") +
+  coord_equal(ratio = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_pander() 
+
 ggplot(group_data,
        aes(x=From, y=To)) +
   geom_tile(aes(fill=Link), col="white") +
   facet_wrap(~ Task) +
   scale_fill_viridis_c(option="inferno", end = 0.8) +
-  ggtitle(paste(task, "Architecture")) +
+  ggtitle("Task-Specific Architectures") +
   coord_equal(ratio = 1) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_pander() 
@@ -248,8 +259,18 @@ Now, let's calculate an architecture across all tasks. We will use majority rule
 ```{r}
 architecture <- group_data %>%
   group_by(To, From) %>%
-  summarise(Link = if_else(sum(Link) >= 2, 1, 0)) %>%
+  summarise(Link = if_else(sum(Link) >= 3, 1, 0),
+            PFisher = 1 - fisher.chi(1 - Plink)) %>%
   add_column(Connectivity = "Empirical")
+
+ggplot(architecture,
+       aes(x=From, y=To)) +
+  geom_tile(aes(fill=PFisher), col="white") +
+  scale_fill_viridis_c(option="inferno", end = 0.8) +
+  ggtitle("Predicted vs. Observed Architecture") +
+  coord_equal(ratio = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_pander() 
 ```
 
 And now we can compare it to the CMC theory.
@@ -265,7 +286,12 @@ cmc <- read_tsv("cmc_theory.txt",
 cmc <- cmc %>%
   add_column(Connectivity = "CMC Theory")
 
-architecture <- full_join(architecture,
+archi <- architecture %>%
+  dplyr::select(To, From, PFisher, Connectivity) %>%
+  mutate(Link = if_else(PFisher > 0.999, 1, 0)) %>%
+  dplyr::select(To, From, Link, Connectivity)
+
+architecture <- full_join(archi,
                           cmc)
 
 ggplot(architecture,
@@ -278,3 +304,5 @@ ggplot(architecture,
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_pander() 
 ```
+
+The CMC differs from the empirically observed connectivity only in 3 of the 25 predictions. Assuming 
