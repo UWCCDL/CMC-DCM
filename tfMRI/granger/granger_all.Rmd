@@ -17,19 +17,34 @@ output:
     toc_depth: '6'
 ---
 
-```{r}
-library(vars)
+```{r echo=F}
+options(tidyverse.quiet = TRUE)
 library(tidyverse)
-library(ggthemes)
+library(vars)
 library(ggplot2)
+library(ggsci)
+library(ggthemes)
+library(kableExtra)
+library(xtable)
 ```
 
 # Granger causality analysis of all data data.
 
+So far, all of the neuroscientific evidence in favor of the CMC comes from a series of Dynamic Causal Modeling (DCM) analysis of task-based fMRI. The results are certainly convincing, but:
+
+ 1. We need _converging evidence_ from another method, to make sure that the the only method used so far (DCM) is not intrinsically biased in favor of a CMC-like architecture. Using a converging method is actually Goal #2 in AFOSR grant.
+ 
+ 2. Although DCM is an elegant tool, it has its fair share of detractors, and two acknowledged downsides.
+    
+    2.1. It relies on many assumptions. For instance, DCM also depends on the how task events are modeled are how they are designed to drive neural activity.
+    
+    2.2. DCM can only be used in a _top-down_ way, examining different models  that need to be chosen beforehand. This is contrast to the most common _bottom-up_ approach i the neurosciences, in which the brain's architecture is inferred from an analysis of the data.
+    
+So, we need a method to estimate effective (i.e., directed) connectivity from data
+
 ## Theory
 
-
-Let's see if we can get CMC from it?
+Let's see if we can get CMC from it. The 
 
 ```{r}
 VOIs <- c('Action', 
@@ -45,9 +60,7 @@ TASKS <- c('Gambling',
            'Language',
            'Emotion')
 
-#S <- length(grep("sub-", dir())) # Num of subjects
 R <- length(VOIs) # Num ROIs
-#SP <- matrix(rep(0, R*R*S), nrow =  S )
 ```
 
 # GC analysis at the individual level
@@ -55,7 +68,6 @@ R <- length(VOIs) # Num ROIs
 First, we need to perform GC analysis on all data.
 
 ```{r}
-# np <- c()
 df <- NULL
 
 for (task in TASKS) {
@@ -85,8 +97,8 @@ for (task in TASKS) {
       Pvalues <- coef[[v]][,4][1 : (R * lag)]  # p-values
       
       subdf <- data.frame(Task = rep(task, R * lag),
-                          Subject = rep(sub, R*lag),
-                          To = rep(voi, R*lag),
+                          Subject = rep(sub, R * lag),
+                          To = rep(voi, R * lag),
                           From = rep(VOIs, lag),
                           Lag = sort(rep(1:lag, R)),
                           Estimate = Estimates,
@@ -103,7 +115,7 @@ for (task in TASKS) {
 granger_data_complete <- as_tibble(df)
 ```
 
-Now, because we have different Lags, we are going to pick the smallest _p_ value for each region across all lags
+Now, because we have different Lags, we are going to pick the smallest _p_ value for each region across all lags. We are also going to translate these _p_-values into binary connections, stored in the "Link" variable. If a connection has a _p_-value < 0.05, it is considered an effective connection and part of that participant's architecture.
 
 ```{r}
 granger_data <- granger_data_complete %>%
@@ -129,15 +141,11 @@ ggplot(data, aes(x=Time, y=BOLD, col=Region)) +
   scale_color_brewer(palette="Set2") +
   facet_wrap(~ Region) +
   theme_pander()
-
-#rownames(P) <- VOIs
-#colnames(P) <- VOIs
 ```
 
-And here are examples of the _p_ values associated to each connection, in each participant, for each task.
+And here are the _p_ values associated with each connection, in each participant, for each task.
 
-```{r, fig.width=15, fig.height=15}
-
+```{r, fig.width=14, fig.height=15}
 for (task in TASKS) {
   p <- ggplot(filter(granger_data, 
                 Task == task),
@@ -163,7 +171,7 @@ for (task in TASKS) {
 #   theme_pander() 
 ```
 
-Let's look at the distribution of lags:
+Now, we can look at the distribution of lags across tasks and participants:
 
 ```{r}
 lags <- granger_data_complete %>%
@@ -171,10 +179,10 @@ lags <- granger_data_complete %>%
   summarise(Lag = max(Lag))
 
 ggplot(lags, aes(x=Lag, fill=Task)) +
-  geom_histogram(col="white", 
-                 binwidth = 1, 
-                 position = "dodge",
-                 alpha=0.7) +
+  geom_bar(position = "dodge", 
+           col="white",
+           width=0.75) +
+  scale_fill_jama() +
   theme_pander()
 ```
 
@@ -231,7 +239,6 @@ group_data <- granger_data %>%
 Here are the task-level functional architectures.
 
 ```{r}
-
 ggplot(group_data,
        aes(x=From, y=To)) +
   geom_tile(aes(fill=Plink), col="white") +
@@ -254,6 +261,8 @@ ggplot(group_data,
 
 ```
 
+# General Architecture
+
 Now, let's calculate an architecture across all tasks. We will use majority rule: If a connection apperas in at least half of the tasks, it will be considered part of the architecture.
 
 ```{r}
@@ -273,15 +282,19 @@ ggplot(architecture,
   theme_pander() 
 ```
 
+## Comparising to CMC
+
 And now we can compare it to the CMC theory.
 
 ```{r}
-cmc <- read_tsv("cmc_theory.txt",
-                col_types = cols(
-                  From = col_character(),
-                  To = col_character(),
-                  Link = col_double()
-                ))
+architectures <- read_tsv("architectures.tsv",
+                          col_types = cols(
+                            From = col_character(),
+                            To = col_character(),
+                            Link = col_double()
+                          ))  
+cmc <- architectures %>%
+  filter(Model == "CMC")
 
 cmc <- cmc %>%
   add_column(Connectivity = "CMC Theory")
@@ -291,10 +304,10 @@ archi <- architecture %>%
   mutate(Link = if_else(PFisher > 0.999, 1, 0)) %>%
   dplyr::select(To, From, Link, Connectivity)
 
-architecture <- full_join(archi,
+comparison <- full_join(archi,
                           cmc)
 
-ggplot(architecture,
+ggplot(comparison,
        aes(x=From, y=To)) +
   geom_tile(aes(fill=Link), col="white") +
   facet_wrap(~ Connectivity) +
@@ -305,4 +318,63 @@ ggplot(architecture,
   theme_pander() 
 ```
 
-The CMC differs from the empirically observed connectivity only in 3 of the 25 predictions. Assuming 
+The CMC differs from the empirically observed connectivity only in 3 of the 25 predictions. Assuming that the proability of a connection is 14/25 (the number of connections predicted by the theory), the probability of making 22 correct identifications out of 25 is `binom.test(22, 25, p = 14/25)`.
+
+## Other architectures
+
+But what about other architectures? Here, we will consider the six competitor architectures examined in the NeuroImage paper. Here is their matrix representation.
+
+```{r, fig.width=6, fig.height=8}
+ggplot(architectures,
+       aes(x=From, y=To)) +
+  geom_tile(aes(fill=Link), col="white") +
+  facet_wrap(~ Model, nrow = 4) +
+  scale_fill_viridis_c(option="inferno", end = 0.8) +
+  ggtitle("Predicted vs. Observed Architecture") +
+  coord_equal(ratio = 1) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_pander() 
+```
+
+How good do they do? To compare them, we will use three different metrics. The first is the degree of _Overlap_, or the proportion of correctly predicted connections. The second is the _Correlation_ between the vectors of observed and predicted connections. The third is the _Z_-score, or the standard deviations of the distance between the number of correctly predicted connections and the number expected by chance. 
+
+Here is a table with the corresponding metrics:
+
+```{r}
+mbinom <- function(x) {
+  binom.test(x, 25)$p.value
+}
+
+mbinom <- Vectorize(mbinom)
+
+model_comparisons <- architectures %>%
+  group_by(Model) %>%
+  summarise(Correlation = cor(Link, archi$Link) ** 2,
+            Overlap = (25 - sum(abs(Link - archi$Link)))/25) %>%
+  mutate(Z = qnorm(1-mbinom(Overlap * 25))) 
+
+
+model_comparisons %>%
+  xtable() %>%
+  kable(digits=3) %>%
+  kable_styling(bootstrap_options = c("hover", "striped"))
+
+```
+
+and here is a visual representation of the performance of the seven architectures. As shown, the CMC outperforms all of the other competitors.
+
+```{r}
+model_comparisons %>%
+  mutate(Z = if_else(Z > 0, Z, 0)) %>%
+  pivot_longer(cols=c(Overlap, Correlation, Z),
+               names_to = "Measure",
+               values_to = "Value") -> lmodel_comparisons
+
+ggplot(lmodel_comparisons, aes(x=Model, y= Value)) +
+  geom_col(aes(fill=Model)) +
+  scale_fill_npg() +
+  facet_wrap(~ Measure, scales = "free_y") +
+  theme_pander() +
+  ggtitle("Comparison of All Architectures") +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+```
