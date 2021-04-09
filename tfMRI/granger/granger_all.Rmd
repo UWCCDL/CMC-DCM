@@ -325,12 +325,16 @@ The CMC differs from the empirically observed connectivity only in 3 of the 25 p
 But what about other architectures? Here, we will consider the six competitor architectures examined in the NeuroImage paper. Here is their matrix representation.
 
 ```{r, fig.width=6, fig.height=8}
+architectures$Model <- factor(architectures$Model,
+                              levels = c("Hub PFC", "Hub Temporal", "Hub Procedural",
+                                         "Hierarchical 1", "Hierarchical 2", "Hierarchical 3",
+                                         "CMC"))
 ggplot(architectures,
        aes(x=From, y=To)) +
   geom_tile(aes(fill=Link), col="white") +
-  facet_wrap(~ Model, nrow = 4) +
+  facet_wrap(~ Model, nrow=3) +
   scale_fill_viridis_c(option="inferno", end = 0.8) +
-  ggtitle("Predicted vs. Observed Architecture") +
+#  ggtitle("Predicted vs. Observed Architecture") +
   coord_equal(ratio = 1) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_pander() 
@@ -363,7 +367,7 @@ model_comparisons %>%
 
 and here is a visual representation of the performance of the seven architectures. As shown, the CMC outperforms all of the other competitors.
 
-```{r}
+```{r, fig.width=6, fig.height=6}
 model_comparisons %>%
   mutate(Z = if_else(Z > 0, Z, 0)) %>%
   pivot_longer(cols=c(Overlap, Correlation, Z),
@@ -372,8 +376,8 @@ model_comparisons %>%
 
 ggplot(lmodel_comparisons, aes(x=Model, y= Value)) +
   geom_col(aes(fill=Model)) +
-  scale_fill_npg() +
-  facet_wrap(~ Measure, scales = "free_y") +
+  scale_fill_d3() +
+  facet_wrap(~ Measure, scales = "free_y", nrow=3) +
   theme_pander() +
   ggtitle("Comparison of All Architectures") +
   theme(axis.text.x = element_text(angle=45, hjust=1))
