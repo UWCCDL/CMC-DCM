@@ -238,26 +238,31 @@ group_data <- granger_data %>%
 
 Here are the task-level functional architectures.
 
-```{r}
+```{r fig.width=6, fig.height=7}
 ggplot(group_data,
        aes(x=From, y=To)) +
   geom_tile(aes(fill=Plink), col="white") +
+  labs(fill="Probability") +
   facet_wrap(~ Task) +
   scale_fill_viridis_c(option="inferno", end = 0.8) +
   ggtitle("Task-Specific Architectures") +
   coord_equal(ratio = 1) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  theme_pander() 
+  theme_pander() +
+  theme(legend.position = "bottom")
+
 
 ggplot(group_data,
        aes(x=From, y=To)) +
   geom_tile(aes(fill=Link), col="white") +
+  labs(fill="Probability") +
   facet_wrap(~ Task) +
   scale_fill_viridis_c(option="inferno", end = 0.8) +
   ggtitle("Task-Specific Architectures") +
   coord_equal(ratio = 1) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  theme_pander() 
+  theme_pander() +
+  theme(legend.position = "bottom")
 
 ```
 
@@ -276,8 +281,9 @@ ggplot(architecture,
        aes(x=From, y=To)) +
   geom_tile(aes(fill=PFisher), col="white") +
   scale_fill_viridis_c(option="inferno", end = 0.8) +
-  ggtitle("Predicted vs. Observed Architecture") +
+  ggtitle("Domain-General Architecture") +
   coord_equal(ratio = 1) +
+  labs(fill="Probability") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_pander() 
 ```
@@ -333,11 +339,13 @@ ggplot(architectures,
        aes(x=From, y=To)) +
   geom_tile(aes(fill=Link), col="white") +
   facet_wrap(~ Model, nrow=3) +
+  ggtitle("Connectivity Matrix Representation\nof the Different Architectures ") +
   scale_fill_viridis_c(option="inferno", end = 0.8) +
 #  ggtitle("Predicted vs. Observed Architecture") +
   coord_equal(ratio = 1) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  theme_pander() 
+  theme_pander() +
+  theme(legend.position = "NA")
 ```
 
 How good do they do? To compare them, we will use three different metrics. The first is the degree of _Overlap_, or the proportion of correctly predicted connections. The second is the _Correlation_ between the vectors of observed and predicted connections. The third is the _Z_-score, or the standard deviations of the distance between the number of correctly predicted connections and the number expected by chance. 
@@ -367,7 +375,7 @@ model_comparisons %>%
 
 and here is a visual representation of the performance of the seven architectures. As shown, the CMC outperforms all of the other competitors.
 
-```{r, fig.width=6, fig.height=6}
+```{r, fig.width=5, fig.height=6}
 model_comparisons %>%
   mutate(Z = if_else(Z > 0, Z, 0)) %>%
   pivot_longer(cols=c(Overlap, Correlation, Z),
@@ -376,9 +384,11 @@ model_comparisons %>%
 
 ggplot(lmodel_comparisons, aes(x=Model, y= Value)) +
   geom_col(aes(fill=Model)) +
-  scale_fill_d3() +
+  scale_fill_jama() +
+  scale_fill_manual(values = c(rep("grey", 6), "tomato")) +
   facet_wrap(~ Measure, scales = "free_y", nrow=3) +
   theme_pander() +
   ggtitle("Comparison of All Architectures") +
-  theme(axis.text.x = element_text(angle=45, hjust=1))
+  theme(axis.text.x = element_text(angle=90, hjust=1)) +
+  theme(legend.position = "NA")
 ```
