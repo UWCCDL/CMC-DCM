@@ -1,0 +1,177 @@
+---
+title: "model_comparisons"
+author: "Andrea Stocco"
+date: "5/24/2021"
+output:
+  html_document:
+    code_folding: hide
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+  word_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(scales)
+library(ggthemes)
+library(ggsci)
+library(kableExtra)
+library(xtable)
+library(matlab)
+library(R.matlab)
+library(MCMCpack)
+library(ggrepel)
+```
+## Resting state 
+
+First, some constants: Models and their associated colors
+
+```{r}
+model.names <- c("Common Model", 
+                 "Hierarchical 1", 
+                 "Hierarchical 2",
+                 "Hierarchical 3",
+                 "Hub-and-spoke PFC", 
+                 "Hub-and-spoke BG",
+                 "Hub-and-spoke Temporal"
+  )
+
+model_colors <- c("red3", "palegreen4", "palegreen3", "palegreen2",
+                  "deepskyblue4", "deepskyblue3", "deepskyblue2")
+```
+
+And now, two utility functions, one to load the data of a BMS data structure, and one to calculate Dirichlet distributions fro the BMS's $\alpha$ values.
+
+```{r}
+load.data <- function(file, 
+                      models=model.names, 
+                      task="Resting State") {
+  res <- NULL
+  bms <- readMat(file)
+  data <- bms$BMS
+  # Likelihood
+  
+  like <- data[[1]][[1]][[4]]
+  # RFX analysis
+  
+  alpha <- data[[1]][[1]][[5]][,,1]$alpha
+  expect <- data[[1]][[1]][[5]][,,1]$exp.r
+  exceed <- data[[1]][[1]][[5]][,,1]$xp
+  pexceed <- data[[1]][[1]][[5]][,,1]$pxp
+  partial <- data.frame(Model = models, Alpha = c(alpha),
+                        Likelihood = c(like), Expected = c(expect),
+                        Exceedance = c(exceed), PExceedance = c(pexceed),
+                        Task = task)
+  
+  if (is.null(res)) {
+    res <- partial
+  } else {
+    res <- merge(res, partial, all=T)
+  }
+  res
+}
+
+generate.exp <- function(alphas, 
+                         mnames = paste("M", 1:length(alphas), sep=""), 
+                         res = 0.001) {
+  p <- seq(0, 1, res)
+  ii <- 1:length(alphas)
+  dd <- NULL
+  
+  for (i in ii) {
+    alpha <- alphas[i]
+    others <- sum(alphas[ii != i])  # Dirichlet dist is agglomerative
+    #print(c(alpha, others))   # Debug
+    
+    # Create the appropriate instantiation of the Dirichlet
+    # Functions with two alpha values (each model vs. the rest)
+    f <- function(x) {ddirichlet(c(x,  1 -x), alpha=c(alpha, others))}
+    vf <- Vectorize(f)
+    d <- vf(p)
+    d[is.na(d)] <- 0
+    dd <-cbind(dd, d)
+    #print(dim(dd))
+  }
+  colnames(dd) <- mnames
+  
+  # Return
+  dd
+}
+```
+
+Now, let's load the data:
+
+```{r}
+comparisons <- load.data("comparisons/BMS.mat")
+comparisons %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("hover", "striped"))
+```
+
+## Probability density distributions
+
+```{r}
+alphas <- comparisons$Alpha
+dists <- as.data.frame(generate.exp(alphas)/1000)
+
+
+names(dists) <- model.names
+
+wdists <- as_tibble(dists) %>%
+  add_column(Task = "Resting State",
+             Time = seq(0, 1, 1/1000))
+
+ldists <- wdists %>%
+  pivot_longer(cols = model.names,
+                names_to = "Model",
+               values_to = "Probability") 
+```
+
+And now, plot:
+
+```{r}
+ggplot(ldists, aes(x=Time, y = Probability, fill=Model, col=Model)) +
+  geom_polygon(alpha=.5) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Resting State") +
+  theme_pander()
+```
+
+
+## Exceedance probabilities
+
+And now, the exceedance probabilities:
+
+```{r}
+ggplot(comparisons, aes(x="", y = Exceedance, fill=Model, col=Model)) +
+  geom_bar(stat = "identity", col="grey", width=1, alpha=.8) +
+  coord_polar("y", start=0) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 2L)) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Resting State") +
+  xlab("Exceedance Probabilities") +
+  ylab("Resting State") +
+  geom_text_repel(aes(label=percent(Exceedance, .1)), 
+                  col="white",
+                  position=position_stack(vjust=0.5), 
+                  direction="both",
+                  size=3) +
+  theme_pander() +
+  theme(axis.ticks = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.text.x = element_blank()) 
+
+```
