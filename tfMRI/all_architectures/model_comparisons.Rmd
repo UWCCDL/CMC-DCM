@@ -47,7 +47,9 @@ model.names <- c("Common Model",
                  "Hub-and-spoke Temporal"
   )
 
-model_colors <- c("red3", "palegreen4", "palegreen3", "palegreen2",
+model_colors <- c("red3", 
+                  #"palegreen4", "palegreen3", "palegreen2",
+                  "goldenrod4", "goldenrod3", "goldenrod2",
                   "deepskyblue4", "deepskyblue3", "deepskyblue2")
 
 folders <- c("All", "Emotion", "Gambling", "Language", 
