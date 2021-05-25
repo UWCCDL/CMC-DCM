@@ -47,8 +47,11 @@ model.names <- c("Common Model",
                  "Hub-and-spoke Temporal"
   )
 
-model_colors <- c("red3", "palegreen4", "palegreen3", "palegreen2",
+model_colors <- c("red3", 
+                  #"palegreen4", "palegreen3", "palegreen2",
+                  "goldenrod4", "goldenrod3", "goldenrod2",
                   "deepskyblue4", "deepskyblue3", "deepskyblue2")
+
 ```
 
 And now, two utility functions, one to load the data of a BMS data structure, and one to calculate Dirichlet distributions fro the BMS's $\alpha$ values.
@@ -130,18 +133,19 @@ names(dists) <- model.names
 
 wdists <- as_tibble(dists) %>%
   add_column(Task = "Resting State",
-             Time = seq(0, 1, 1/1000))
+             Probability = seq(0, 1, 1/1000))
 
 ldists <- wdists %>%
   pivot_longer(cols = model.names,
                 names_to = "Model",
-               values_to = "Probability") 
+               values_to = "Density") 
 ```
 
 And now, plot:
 
 ```{r}
-ggplot(ldists, aes(x=Time, y = Probability, fill=Model, col=Model)) +
+ldists$Density[ldists$Density == Inf] <- 0
+ggplot(ldists, aes(x=Probability, y = Density, fill=Model, col=Model)) +
   geom_polygon(alpha=.5) +
   scale_color_manual(values = model_colors) +
   scale_fill_manual(values = model_colors) +
@@ -174,4 +178,25 @@ ggplot(comparisons, aes(x="", y = Exceedance, fill=Model, col=Model)) +
         axis.text.y = element_blank(),
         axis.text.x = element_blank()) 
 
+```
+
+Same plot, but, this time, as stacked horizontal bars (like in the NeuroImage paper)
+
+```{r fig.width=6, fig.height=2}
+ggplot(comparisons, aes(x=Task, y = Exceedance, fill=Model, col=Model)) +
+  geom_bar(stat = "identity", col="white", 
+           width = .5, alpha = .5) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 5L)) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Resting-State fMRI") +
+  xlab("Task") +
+  ylab("Exceedance Probabiliy") +
+  coord_flip() +
+  geom_text_repel(aes(label=percent(Exceedance, .1)), 
+                  col="white",
+                  position=position_stack(), 
+                  direction="both",
+                  size=3) +
+  theme_pander()
 ```

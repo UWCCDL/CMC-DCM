@@ -147,12 +147,12 @@ for (task in folders) {
   
   wdists <- as_tibble(dists) %>%
     add_column(Task = task,
-               Time = seq(0, 1, 1/1000))
+               Probability = seq(0, 1, 1/1000))
   
   ldists <- wdists %>%
     pivot_longer(cols = model.names,
                  names_to = "Model",
-                 values_to = "Probability") 
+                 values_to = "Density") 
   
   if (is.null(all_dists)) {
     all_dists <- ldists
@@ -165,8 +165,10 @@ for (task in folders) {
 And now, plot:
 
 ```{r fig.width=7, fig.height=6}
-all_dists$Probability[all_dists$Probability == Inf] <- 0
-ggplot(filter(all_dists, Task!="All"), aes(x=Time, y = Probability, fill=Model, col=Model)) +
+all_dists$Density[all_dists$Density == Inf] <- 0
+ggplot(filter(all_dists, Task!="All"), 
+       aes(x=Probability, y = Density, 
+           fill=Model, col=Model)) +
   geom_polygon(alpha = .5) +
   facet_wrap(~ Task, ncol=2) +
   coord_cartesian(ylim = c(0, 0.03)) +
@@ -202,5 +204,27 @@ ggplot(res, aes(x="", y = Exceedance, fill=Model, col=Model)) +
   theme(axis.ticks = element_blank(), 
         axis.text.y = element_blank(),
         axis.text.x = element_blank()) 
+
+```
+
+Same plot, but, this time, as stacked horizontal bars (like in the NeuroImage paper)
+
+```{r}
+ggplot(res, aes(x=Task, y = Exceedance, fill=Model, col=Model)) +
+  geom_bar(stat = "identity", col="white", 
+           width = .75, alpha = .5) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 5L)) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Task-based fMRI") +
+  xlab("Task") +
+  ylab("Exceedance Probabiliy") +
+  coord_flip() +
+  geom_text_repel(aes(label=percent(Exceedance, .1)), 
+                  col="white",
+                  position=position_stack(), 
+                  direction="both",
+                  size=3) +
+  theme_pander()
 
 ```

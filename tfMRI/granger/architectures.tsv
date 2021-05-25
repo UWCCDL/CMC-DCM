@@ -1,0 +1,176 @@
+Model	From	To	Link
+CMC	Action	Action	1
+CMC	Action	LTM	0
+CMC	Action	Perception	1
+CMC	Action	Procedural	0
+CMC	Action	WM	0
+CMC	LTM	Action	0
+CMC	LTM	LTM	1
+CMC	LTM	Perception	0
+CMC	LTM	Procedural	0
+CMC	LTM	WM	1
+CMC	Perception	Action	1
+CMC	Perception	LTM	0
+CMC	Perception	Perception	1
+CMC	Perception	Procedural	0
+CMC	Perception	WM	1
+CMC	Procedural	Action	0
+CMC	Procedural	LTM	0
+CMC	Procedural	Perception	0
+CMC	Procedural	Procedural	1
+CMC	Procedural	WM	1
+CMC	WM	Action	1
+CMC	WM	LTM	1
+CMC	WM	Perception	1
+CMC	WM	Procedural	1
+CMC	WM	WM	1
+Hub PFC	Action	Action	1
+Hub PFC	Action	LTM	0
+Hub PFC	Action	Perception	0
+Hub PFC	Action	Procedural	0
+Hub PFC	Action	WM	1
+Hub PFC	LTM	Action	0
+Hub PFC	LTM	LTM	1
+Hub PFC	LTM	Perception	0
+Hub PFC	LTM	Procedural	0
+Hub PFC	LTM	WM	1
+Hub PFC	Perception	Action	0
+Hub PFC	Perception	LTM	0
+Hub PFC	Perception	Perception	1
+Hub PFC	Perception	Procedural	0
+Hub PFC	Perception	WM	1
+Hub PFC	Procedural	Action	0
+Hub PFC	Procedural	LTM	0
+Hub PFC	Procedural	Perception	0
+Hub PFC	Procedural	Procedural	1
+Hub PFC	Procedural	WM	1
+Hub PFC	WM	Action	1
+Hub PFC	WM	LTM	1
+Hub PFC	WM	Perception	1
+Hub PFC	WM	Procedural	1
+Hub PFC	WM	WM	1
+Hub Temporal	Action	Action	1
+Hub Temporal	Action	LTM	1
+Hub Temporal	Action	Perception	0
+Hub Temporal	Action	Procedural	0
+Hub Temporal	Action	WM	0
+Hub Temporal	LTM	Action	1
+Hub Temporal	LTM	LTM	1
+Hub Temporal	LTM	Perception	1
+Hub Temporal	LTM	Procedural	1
+Hub Temporal	LTM	WM	1
+Hub Temporal	Perception	Action	0
+Hub Temporal	Perception	LTM	1
+Hub Temporal	Perception	Perception	1
+Hub Temporal	Perception	Procedural	0
+Hub Temporal	Perception	WM	0
+Hub Temporal	Procedural	Action	0
+Hub Temporal	Procedural	LTM	1
+Hub Temporal	Procedural	Perception	0
+Hub Temporal	Procedural	Procedural	1
+Hub Temporal	Procedural	WM	0
+Hub Temporal	WM	Action	0
+Hub Temporal	WM	LTM	1
+Hub Temporal	WM	Perception	0
+Hub Temporal	WM	Procedural	0
+Hub Temporal	WM	WM	1
+Hub Procedural	Action	Action	1
+Hub Procedural	Action	LTM	0
+Hub Procedural	Action	Perception	0
+Hub Procedural	Action	Procedural	1
+Hub Procedural	Action	WM	0
+Hub Procedural	LTM	Action	0
+Hub Procedural	LTM	LTM	1
+Hub Procedural	LTM	Perception	0
+Hub Procedural	LTM	Procedural	1
+Hub Procedural	LTM	WM	0
+Hub Procedural	Perception	Action	0
+Hub Procedural	Perception	LTM	0
+Hub Procedural	Perception	Perception	1
+Hub Procedural	Perception	Procedural	1
+Hub Procedural	Perception	WM	0
+Hub Procedural	Procedural	Action	1
+Hub Procedural	Procedural	LTM	1
+Hub Procedural	Procedural	Perception	1
+Hub Procedural	Procedural	Procedural	1
+Hub Procedural	Procedural	WM	1
+Hub Procedural	WM	Action	0
+Hub Procedural	WM	LTM	0
+Hub Procedural	WM	Perception	0
+Hub Procedural	WM	Procedural	1
+Hub Procedural	WM	WM	1
+Hierarchical 1	Action	Action	1
+Hierarchical 1	Action	LTM	0
+Hierarchical 1	Action	Perception	0
+Hierarchical 1	Action	Procedural	0
+Hierarchical 1	Action	WM	1
+Hierarchical 1	LTM	Action	0
+Hierarchical 1	LTM	LTM	1
+Hierarchical 1	LTM	Perception	0
+Hierarchical 1	LTM	Procedural	1
+Hierarchical 1	LTM	WM	1
+Hierarchical 1	Perception	Action	0
+Hierarchical 1	Perception	LTM	0
+Hierarchical 1	Perception	Perception	1
+Hierarchical 1	Perception	Procedural	1
+Hierarchical 1	Perception	WM	0
+Hierarchical 1	Procedural	Action	0
+Hierarchical 1	Procedural	LTM	1
+Hierarchical 1	Procedural	Perception	1
+Hierarchical 1	Procedural	Procedural	1
+Hierarchical 1	Procedural	WM	0
+Hierarchical 1	WM	Action	1
+Hierarchical 1	WM	LTM	1
+Hierarchical 1	WM	Perception	0
+Hierarchical 1	WM	Procedural	0
+Hierarchical 1	WM	WM	1
+Hierarchical 2	Action	Action	1
+Hierarchical 2	Action	LTM	0
+Hierarchical 2	Action	Perception	0
+Hierarchical 2	Action	Procedural	0
+Hierarchical 2	Action	WM	1
+Hierarchical 2	LTM	Action	0
+Hierarchical 2	LTM	LTM	1
+Hierarchical 2	LTM	Perception	1
+Hierarchical 2	LTM	Procedural	1
+Hierarchical 2	LTM	WM	0
+Hierarchical 2	Perception	Action	0
+Hierarchical 2	Perception	LTM	1
+Hierarchical 2	Perception	Perception	1
+Hierarchical 2	Perception	Procedural	0
+Hierarchical 2	Perception	WM	0
+Hierarchical 2	Procedural	Action	0
+Hierarchical 2	Procedural	LTM	1
+Hierarchical 2	Procedural	Perception	0
+Hierarchical 2	Procedural	Procedural	1
+Hierarchical 2	Procedural	WM	1
+Hierarchical 2	WM	Action	1
+Hierarchical 2	WM	LTM	0
+Hierarchical 2	WM	Perception	0
+Hierarchical 2	WM	Procedural	1
+Hierarchical 2	WM	WM	1
+Hierarchical 3	Action	Action	1
+Hierarchical 3	Action	LTM	0
+Hierarchical 3	Action	Perception	0
+Hierarchical 3	Action	Procedural	1
+Hierarchical 3	Action	WM	0
+Hierarchical 3	LTM	Action	0
+Hierarchical 3	LTM	LTM	1
+Hierarchical 3	LTM	Perception	1
+Hierarchical 3	LTM	Procedural	0
+Hierarchical 3	LTM	WM	1
+Hierarchical 3	Perception	Action	0
+Hierarchical 3	Perception	LTM	1
+Hierarchical 3	Perception	Perception	1
+Hierarchical 3	Perception	Procedural	0
+Hierarchical 3	Perception	WM	0
+Hierarchical 3	Procedural	Action	1
+Hierarchical 3	Procedural	LTM	0
+Hierarchical 3	Procedural	Perception	0
+Hierarchical 3	Procedural	Procedural	1
+Hierarchical 3	Procedural	WM	1
+Hierarchical 3	WM	Action	0
+Hierarchical 3	WM	LTM	1
+Hierarchical 3	WM	Perception	0
+Hierarchical 3	WM	Procedural	1
+Hierarchical 3	WM	WM	1
