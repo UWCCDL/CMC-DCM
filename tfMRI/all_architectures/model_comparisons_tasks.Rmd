@@ -231,7 +231,7 @@ ggplot(res, aes(x=Task, y = Exceedance, fill=Model, col=Model)) +
 
 # Example of fit
 
-```{r}
+```{r, fig.height=7, fig.width=4}
 pred <- read_delim("predicted.csv", delim=",",
                    col_names=c("Action", "LTM", "Perception", "Procedural", "WM"),
                    col_types = cols(
@@ -242,7 +242,17 @@ pred <- read_delim("predicted.csv", delim=",",
                      WM = col_double()
                    ))
 
-obs <- read_delim("responses.csv", delim=",",
+# obs <- read_delim("responses.csv", delim=",",
+#                   col_names=c("Action", "LTM", "Perception", "Procedural", "WM"),
+#                   col_types = cols(
+#                      Action = col_double(),
+#                      LTM = col_double(),
+#                      Perception = col_double(),
+#                      Procedural = col_double(),
+#                      WM = col_double()
+#                    ))
+
+obs <- read_tsv("responses.txt", 
                   col_names=c("Action", "LTM", "Perception", "Procedural", "WM"),
                   col_types = cols(
                      Action = col_double(),
@@ -272,9 +282,15 @@ lobs <- obs %>%
 lfit <- rbind(lobs, lpred)
 
 
-ggplot(lobs, aes(x=Time, y=BOLD, col=Type)) +
+ggplot(lfit, aes(x=Time, y=BOLD, col=Region, linetype=Type, alpha=Type)) +
   geom_line() +
-  facet_wrap(~Region, ncol=1) +
-  theme_pander()
+  scale_alpha_manual(values=(c(0.35, 1))) +
+  scale_linetype_manual(values=c("solid", "solid")) +
+  scale_color_manual(values=c("purple", "orange", "red", "chartreuse4", "darkturquoise")) +
+  facet_wrap(~Region, ncol=1, scales = "free_y") +
+  ylab("% BOLD Change") +
+  theme_pander() +
+  theme(legend.position = "bottom") +
+  guides(color=F)
               
 ```
