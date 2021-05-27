@@ -228,3 +228,53 @@ ggplot(res, aes(x=Task, y = Exceedance, fill=Model, col=Model)) +
   theme_pander()
 
 ```
+
+# Example of fit
+
+```{r}
+pred <- read_delim("predicted.csv", delim=",",
+                   col_names=c("Action", "LTM", "Perception", "Procedural", "WM"),
+                   col_types = cols(
+                     Action = col_double(),
+                     LTM = col_double(),
+                     Perception = col_double(),
+                     Procedural = col_double(),
+                     WM = col_double()
+                   ))
+
+obs <- read_delim("responses.csv", delim=",",
+                  col_names=c("Action", "LTM", "Perception", "Procedural", "WM"),
+                  col_types = cols(
+                     Action = col_double(),
+                     LTM = col_double(),
+                     Perception = col_double(),
+                     Procedural = col_double(),
+                     WM = col_double()
+                   ))
+
+time <- seq(1, nrow(pred)) * 0.72
+
+lpred <- pred %>% 
+  add_column(Time = time) %>%
+  pivot_longer(cols=c("Action", "LTM", "Perception", "Procedural", "WM"),
+                       names_to = "Region",
+                       values_to = "BOLD")  %>%
+  add_column(Type = "Predicted")
+
+lobs <- obs %>% 
+  add_column(Time = time) %>%
+  pivot_longer(cols=c("Action", "LTM", "Perception", "Procedural", "WM"),
+                       names_to = "Region",
+                       values_to = "BOLD") %>%
+  add_column(Type = "Observed")
+
+
+lfit <- rbind(lobs, lpred)
+
+
+ggplot(lobs, aes(x=Time, y=BOLD, col=Type)) +
+  geom_line() +
+  facet_wrap(~Region, ncol=1) +
+  theme_pander()
+              
+```
