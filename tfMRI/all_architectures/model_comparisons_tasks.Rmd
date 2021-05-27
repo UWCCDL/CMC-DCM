@@ -286,10 +286,10 @@ ggplot(lfit, aes(x=Time, y=BOLD, col=Region, linetype=Type, alpha=Type)) +
   geom_line() +
   scale_alpha_manual(values=(c(0.35, 1))) +
   scale_linetype_manual(values=c("solid", "solid")) +
-  scale_color_manual(values=c("purple", "orange", "red", "chartreuse4", "darkturquoise")) +
+  scale_color_manual(values=c("purple", "orange3", "red", "chartreuse4", "darkturquoise")) +
   facet_wrap(~Region, ncol=1, scales = "free_y") +
   ylab("% BOLD Change") +
-  theme_pander() +
+  theme_minimal() +
   theme(legend.position = "bottom") +
   guides(color=F)
               
