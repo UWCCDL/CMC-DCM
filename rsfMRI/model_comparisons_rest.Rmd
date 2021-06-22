@@ -156,6 +156,13 @@ And now, plot:
 
 ```{r}
 ldists$Density[ldists$Density == Inf] <- 0
+ldist_summary <- ldists %>%
+  group_by(Model) %>%
+#  mutate(dXdY = Probability * Density * 1000) %>%
+  summarize(#Expected = mean(dXdY),
+            MaxDensity = max(Density))
+
+comparisons <- inner_join(comparisons, ldist_summary, keep=F)
 
 densityp <- ggplot(ldists, aes(x=Probability, 
                                y = Density, 
@@ -164,6 +171,10 @@ densityp <- ggplot(ldists, aes(x=Probability,
   geom_polygon(alpha=.5) +
   scale_color_manual(values = model_colors) +
   scale_fill_manual(values = model_colors) +
+  geom_text_repel(data=comparisons, aes(x=Expected, 
+                                        y=MaxDensity, 
+                                        label=percent(Exceedance, accuracy = 0.1)),
+                  col="black") +
   ggtitle("Resting State") +
   theme_pander()
 

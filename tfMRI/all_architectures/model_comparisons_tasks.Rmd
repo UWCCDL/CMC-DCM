@@ -164,8 +164,16 @@ for (task in folders) {
 
 And now, plot:
 
-```{r fig.width=7, fig.height=6}
+```{r fig.width=6, fig.height=7}
 all_dists$Density[all_dists$Density == Inf] <- 0
+
+all_dist_summary <- all_dists %>%
+  group_by(Model, Task) %>%
+  summarize(MaxDensity = max(Density))
+
+res <- inner_join(res, all_dist_summary, keep=F)
+
+
 ggplot(filter(all_dists, Task!="All"), 
        aes(x=Probability, y = Density, 
            fill=Model, col=Model)) +
@@ -175,8 +183,17 @@ ggplot(filter(all_dists, Task!="All"),
   scale_color_manual(values = model_colors) +
   scale_fill_manual(values = model_colors) +
   ggtitle("Task-Based fMRI") +
+  geom_text_repel(data=filter(res, Task != "All"),
+                  aes(x = Expected, 
+                      y = MaxDensity, 
+                      label = percent(Exceedance, accuracy = 0.1)),
+                  color="black") +
+
   theme_pander() +
-  theme(legend.position = "right")
+  theme(legend.position = "bottom") +
+  guides(fill=guide_legend(ncol=2),
+         col=guide_legend(ncol=2))
+
 ```
 
 
