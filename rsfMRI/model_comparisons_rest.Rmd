@@ -32,6 +32,7 @@ library(matlab)
 library(R.matlab)
 library(MCMCpack)
 library(ggrepel)
+library(patchwork)    
 ```
 ## Resting state 
 
@@ -48,8 +49,8 @@ model.names <- c("Common Model",
   )
 
 model_colors <- c("red3", 
-                  #"palegreen4", "palegreen3", "palegreen2",
-                  "goldenrod4", "goldenrod3", "goldenrod2",
+                  "palegreen4", "palegreen3", "palegreen2",
+                  #"goldenrod4", "goldenrod3", "goldenrod2",
                   "deepskyblue4", "deepskyblue3", "deepskyblue2")
 
 ```
@@ -117,6 +118,16 @@ Now, let's load the data:
 
 ```{r}
 comparisons <- load.data("comparisons/BMS.mat")
+```
+
+We create the Relatie Log-Likelihood measure and print the full table of measures:
+
+```{r}
+minL <- min(comparisons$Likelihood)
+
+comparisons <- comparisons %>%
+  mutate(RelativeLikelihood = Likelihood - minL)
+
 comparisons %>%
   kable() %>%
   kable_styling(bootstrap_options = c("hover", "striped"))
@@ -145,12 +156,18 @@ And now, plot:
 
 ```{r}
 ldists$Density[ldists$Density == Inf] <- 0
-ggplot(ldists, aes(x=Probability, y = Density, fill=Model, col=Model)) +
+
+densityp <- ggplot(ldists, aes(x=Probability, 
+                               y = Density, 
+                               fill=Model, 
+                               col=Model)) +
   geom_polygon(alpha=.5) +
   scale_color_manual(values = model_colors) +
   scale_fill_manual(values = model_colors) +
   ggtitle("Resting State") +
   theme_pander()
+
+densityp 
 ```
 
 
@@ -183,8 +200,9 @@ ggplot(comparisons, aes(x="", y = Exceedance, fill=Model, col=Model)) +
 Same plot, but, this time, as stacked horizontal bars (like in the NeuroImage paper)
 
 ```{r fig.width=6, fig.height=2}
-ggplot(comparisons, aes(x=Task, y = Exceedance, fill=Model, col=Model)) +
-  geom_bar(stat = "identity", col="white", 
+exceedancep <- 
+  ggplot(comparisons, aes(x=Task, y = Exceedance, fill=Model, col=Model)) +
+  geom_bar(stat = "identity",  
            width = .5, alpha = .5) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 5L)) +
   scale_color_manual(values = model_colors) +
@@ -198,5 +216,44 @@ ggplot(comparisons, aes(x=Task, y = Exceedance, fill=Model, col=Model)) +
                   position=position_stack(), 
                   direction="both",
                   size=3) +
-  theme_pander()
+  theme_pander() +
+  theme(legend.position = "bottom")
+
+exceedancep
+```
+
+And here we have a paper-worth combined figure:
+
+```{r, fig.width=5, fig.height=4}
+densityp + ggtitle("")  + 
+  theme(legend.position = "bottom") + 
+  guides(fill=guide_legend(ncol=2),
+         col=guide_legend(ncol=2))
+```
+
+```{r fig.width=5, fig.height=4}
+
+logLp <- ggplot(comparisons, aes(x=Model, 
+                                 y = RelativeLikelihood, 
+                                 fill=Model,
+                                 col=Model)) +
+  geom_col(
+           width = .9, alpha = .5) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Resting-State fMRI") +
+  xlab("Task") +
+  ylab("Relative Log-Likelihood") +
+  #coord_flip() +
+  geom_text(aes(label=round(RelativeLikelihood,1),
+                y = RelativeLikelihood + 150), 
+            col="black",
+#            position = position_stack(vjust=c(1)),
+            direction="both",
+            size=3) +
+  theme_pander() +
+  theme(axis.text.x = element_text(angle=45, hjust = c(1)),
+        legend.position = "NA")
+
+logLp
 ```

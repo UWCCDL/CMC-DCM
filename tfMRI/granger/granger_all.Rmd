@@ -376,19 +376,41 @@ model_comparisons %>%
 and here is a visual representation of the performance of the seven architectures. As shown, the CMC outperforms all of the other competitors.
 
 ```{r, fig.width=5, fig.height=6}
+model_names <- c("CMC", 
+                 "Hierarchical 1", 
+                 "Hierarchical 2",
+                 "Hierarchical 3",
+                 "Hub PFC", 
+                 "Hub Procedural",
+                 "Hub Temporal"
+  )
+
+model_colors <- c("red3", 
+                  "palegreen4", "palegreen3", "palegreen2",
+                  #"goldenrod4", "goldenrod3", "goldenrod2",
+                  "deepskyblue4", "deepskyblue3", "deepskyblue2")
+
+
 model_comparisons %>%
   mutate(Z = if_else(Z > 0, Z, 0)) %>%
   pivot_longer(cols=c(Overlap, Correlation, Z),
                names_to = "Measure",
                values_to = "Value") -> lmodel_comparisons
 
+lmodel_comparisons$Model <- factor(lmodel_comparisons$Model,
+                                   levels = model_names)
+
 ggplot(lmodel_comparisons, aes(x=Model, y= Value)) +
-  geom_col(aes(fill=Model)) +
-  scale_fill_jama() +
-  scale_fill_manual(values = c(rep("grey", 6), "tomato")) +
+  geom_col(aes(fill=Model, col=Model), alpha=0.5) +
+  #scale_fill_jama() +
+  scale_fill_manual(values = model_colors) +
+  scale_color_manual(values = model_colors) +
   facet_wrap(~ Measure, scales = "free_y", nrow=3) +
   theme_pander() +
   ggtitle("Comparison of All Architectures") +
   theme(axis.text.x = element_text(angle=90, hjust=1)) +
-  theme(legend.position = "NA")
+  geom_text(aes(label=format(round(Value, 2), nsmall = 2)),
+            position = position_stack(vjust = 0.5)) +
+  theme(legend.position = "NA",
+        axis.text.x = element_text(angle=45))
 ```
