@@ -159,7 +159,7 @@ ldists$Density[ldists$Density == Inf] <- 0
 ldist_summary <- ldists %>%
   group_by(Model) %>%
 #  mutate(dXdY = Probability * Density * 1000) %>%
-  summarize(#Expected = mean(dXdY),
+  summarise(#Expected = mean(dXdY),
             MaxDensity = max(Density))
 
 comparisons <- inner_join(comparisons, ldist_summary, keep=F)
@@ -223,8 +223,8 @@ exceedancep <-
   ylab("Exceedance Probabiliy") +
   coord_flip() +
   geom_text_repel(aes(label=percent(Exceedance, .1)), 
-                  col="white",
-                  position=position_stack(), 
+                  col="black",
+                  position=position_stack(vjust=0.5), 
                   direction="both",
                   size=3) +
   theme_pander() +
