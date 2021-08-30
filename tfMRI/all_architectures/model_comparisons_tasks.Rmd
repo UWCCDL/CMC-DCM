@@ -174,7 +174,7 @@ all_dist_summary <- all_dists %>%
 res <- inner_join(res, all_dist_summary, keep=F)
 
 
-ggplot(filter(all_dists, Task!="All"), 
+ggplot(filter(all_dists), 
        aes(x=Probability, y = Density, 
            fill=Model, col=Model)) +
   geom_polygon(alpha = .5) +
@@ -309,7 +309,6 @@ ggplot(lfit, aes(x=Time, y=BOLD, col=Region, linetype=Type, alpha=Type)) +
   theme_minimal() +
   theme(legend.position = "bottom") +
   guides(color=F)
-              
 ```
 
 Just the timeseries:

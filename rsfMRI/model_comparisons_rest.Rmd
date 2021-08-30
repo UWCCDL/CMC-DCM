@@ -55,7 +55,7 @@ model_colors <- c("red3",
 
 ```
 
-And now, two utility functions, one to load the data of a BMS data structure, and one to calculate Dirichlet distributions fro the BMS's $\alpha$ values.
+And now, two utility functions, one to load the data of a BMS data structure, and one to calculate Dirichlet distributions from the BMS's $\alpha$ values.
 
 ```{r}
 load.data <- function(file, 
@@ -120,7 +120,7 @@ Now, let's load the data:
 comparisons <- load.data("comparisons/BMS.mat")
 ```
 
-We create the Relatie Log-Likelihood measure and print the full table of measures:
+We create the Relative Log-Likelihood measure and print the full table of measures:
 
 ```{r}
 minL <- min(comparisons$Likelihood)
