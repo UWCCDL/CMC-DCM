@@ -49,8 +49,8 @@ model.names <- c("Common Model",
   )
 
 model_colors <- c("red3", 
-                  #"palegreen4", "palegreen3", "palegreen2",
-                  "goldenrod4", "goldenrod3", "goldenrod2",
+                  "palegreen4", "palegreen3", "palegreen2",
+                  #"goldenrod4", "goldenrod3", "goldenrod2",
                   "deepskyblue4", "deepskyblue3", "deepskyblue2")
 
 ```
@@ -236,10 +236,11 @@ exceedancep
 And here we have a paper-worth combined figure:
 
 ```{r, fig.width=5, fig.height=4}
-densityp + ggtitle("")  + 
+densityp + ggtitle("Architecture Comparison")  + 
   theme(legend.position = "bottom") + 
   guides(fill=guide_legend(ncol=2),
          col=guide_legend(ncol=2))
+ggsave("figure8.png", dpi=300)
 ```
 
 ```{r fig.width=5, fig.height=4}
@@ -252,7 +253,7 @@ logLp <- ggplot(comparisons, aes(x=Model,
            width = .9, alpha = .5) +
   scale_color_manual(values = model_colors) +
   scale_fill_manual(values = model_colors) +
-  ggtitle("Resting-State fMRI") +
+  ggtitle("Architecture Comparison") +
   xlab("Task") +
   ylab("Relative Log-Likelihood") +
   #coord_flip() +
@@ -267,4 +268,5 @@ logLp <- ggplot(comparisons, aes(x=Model,
         legend.position = "NA")
 
 logLp
+ggsave("figure7.png")
 ```
