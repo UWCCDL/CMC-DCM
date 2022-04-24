@@ -41,7 +41,7 @@ First, let's define some basic variables.
 folders <- c("Emotion", "Gambling", "Language", 
              "Relational", "Social", "WM")
 
-task_names <- c("Emotion Recognitin", 
+task_names <- c("Emotion Recognition", 
                 "Incentive Processing", "Language and Math", 
                 "Relational Reasoning", "Social Cognition", 
                 "Working Memory")
@@ -96,23 +96,37 @@ lres <- wres %>%
   pivot_longer(colnames(nres), names_to = "Connection", values_to = "Value")
 ```
 
+Now, we wnat to change the order of factors in "Task" so that the Resting State is always listed last.
+
+```{r}
+lres$Task <- factor(lres$Task,
+                    levels = c(task_names, "Resting state"))
+```
+
 ## Results
 
 Here is the visuaklization
 
-```{r fig.width=6, fig.height=5}
+```{r fig.width=6, fig.height=6}
 
-ggplot(lres, aes(x=Connection, y=Value, col=TaskVsRest)) +
-  geom_point(alpha=0.6, position=position_jitter(width=0.2), size=5) +
-  stat_summary(data = filter(lres, TaskVsRest=="Task"), fun.data = mean_sdl, geom="errorbar", col="darkred", width=0.25) +
-  scale_color_d3() +
-  xlab("Connection") +
-  ylab("Effective Connectivity (Hz)") +
-  ggtitle("Connectivity Values Across Tasks and Rest Data") +
-  labs(col="Paradigm") +
+ggplot(lres, aes(y=Connection, x=Value, col=Task)) +
+  geom_point(alpha=0.6, position=position_jitter(height=0.2), size=5) +
+  stat_summary(data = filter(lres, TaskVsRest=="Task"), 
+               fun.data = mean_sdl, 
+               geom="errorbar", 
+               col="navy", 
+               width=0.25) +
+  scale_color_manual(values = c("deepskyblue1", "dodgerblue", "dodgerblue1", "dodgerblue2", "dodgerblue3", "dodgerblue4", "red")) +
+  scale_shape_manual(values=c(21, 22)) +
+  ylab("Connection") +
+  xlab("Effective Connectivity (Hz)") +
+  ggtitle("Connectivity Values\nAcross Tasks and Rest Data") +
+  labs(col="Task") +
   theme_pander() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  theme(legend.position="bottom")
+  #theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(legend.position="right")
+
+ggsave("figure11.png")
 ```
 
 ## Are there significant differences?
