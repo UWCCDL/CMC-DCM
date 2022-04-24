@@ -1,0 +1,127 @@
+---
+title: "Resting State vs. Task Based Parameters"
+author: "Andrea Stocco"
+date: "5/24/2021"
+output:
+  html_document:
+    code_folding: hide
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+  word_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(scales)
+library(ggthemes)
+library(ggsci)
+library(kableExtra)
+library(xtable)
+library(matlab)
+library(R.matlab)
+library(MCMCpack)
+library(ggrepel)
+```
+# Resting state vs. task-based parameters
+
+First, let's define some basic variables.
+
+```{r}
+folders <- c("Emotion", "Gambling", "Language", 
+             "Relational", "Social", "WM")
+
+task_names <- c("Emotion Recognitin", 
+                "Incentive Processing", "Language and Math", 
+                "Relational Reasoning", "Social Cognition", 
+                "Working Memory")
+
+regions <- c("Action", "LTM", "Perception", "Procedural", "WM")
+```
+
+## Data loading and preparation
+
+The data is contained in a series of task- and paradigm-specific matrices. 
+
+```{r}
+res <- NULL
+for (task in folders) {
+  vals <- scan(file = paste("../tfMRI/all_architectures/", 
+                            task, 
+                            paste(task, "_avg_A.txt", sep=""),
+                            sep="/"),
+               sep=",")
+  if (is.null(res)) {
+    res <- vals
+  } else {
+    res <- rbind(res, vals)
+  }
+}
+
+vals <- scan("Rest1_avg_A.csv", sep=",")
+res <- rbind(res, vals)
+
+```
+
+Now, let's remove the missing connections and turn the results into a tibble
+
+```{r}
+connection_names <- c(outer(regions, regions, FUN = function(x, y) {paste(x, "->", y)}))
+colnames(res) <- connection_names
+nres <- res[,colMeans(res) != 0]
+rownames(nres) <- c(task_names, "Resting state")
+nres <- as_tibble(nres)
+```
+
+And, finally, let's put the tibble in long form, so it can be visualized with `ggplot`.
+
+```{r}
+wres <- nres %>%
+  add_column(Task = c(task_names, "Resting state") )
+
+wres <- wres %>%
+  mutate(TaskVsRest = if_else(Task == "Resting state", "Rest", "Task"))
+
+lres <- wres %>%
+  pivot_longer(colnames(nres), names_to = "Connection", values_to = "Value")
+```
+
+## Results
+
+Here is the visuaklization
+
+```{r fig.width=6, fig.height=5}
+
+ggplot(lres, aes(x=Connection, y=Value, col=TaskVsRest)) +
+  geom_point(alpha=0.6, position=position_jitter(width=0.2), size=5) +
+  stat_summary(data = filter(lres, TaskVsRest=="Task"), fun.data = mean_sdl, geom="errorbar", col="darkred", width=0.25) +
+  scale_color_d3() +
+  xlab("Connection") +
+  ylab("Effective Connectivity (Hz)") +
+  ggtitle("Connectivity Values Across Tasks and Rest Data") +
+  labs(col="Paradigm") +
+  theme_pander() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(legend.position="bottom")
+```
+
+## Are there significant differences?
+
+We can use a simple ANOVA to see whether there is a significant effect of task:
+
+```{r}
+summary(aov(Value ~ (Connection * TaskVsRest), lres)) %>%
+  xtable() %>%
+  kable(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
