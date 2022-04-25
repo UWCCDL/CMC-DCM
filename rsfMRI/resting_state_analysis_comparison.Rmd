@@ -1,0 +1,381 @@
+---
+title: "model_comparisons"
+author: "Andrea Stocco"
+date: "5/24/2021"
+output:
+  html_document:
+    code_folding: hide
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+  word_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(scales)
+library(ggthemes)
+library(ggsci)
+library(kableExtra)
+library(xtable)
+library(matlab)
+library(R.matlab)
+library(MCMCpack)
+library(ggrepel)
+library(patchwork)    
+```
+## Resting state 
+
+First, some constants: Models and their associated colors
+
+```{r}
+model.names <- c("Common Model", 
+                 "Hierarchical 1", 
+                 "Hierarchical 2",
+                 "Hierarchical 3",
+                 "Hub-and-spoke PFC", 
+                 "Hub-and-spoke BG",
+                 "Hub-and-spoke Temporal"
+  )
+
+model_colors <- c("red3", 
+                  "palegreen4", "palegreen3", "palegreen2",
+                  #"goldenrod4", "goldenrod3", "goldenrod2",
+                  "deepskyblue4", "deepskyblue3", "deepskyblue2")
+
+```
+
+And now, two utility functions, one to load the data of a BMS data structure, and one to calculate Dirichlet distributions from the BMS's $\alpha$ values.
+
+```{r}
+load.data <- function(file, 
+                      models=model.names, 
+                      task="Resting State") {
+  res <- NULL
+  bms <- readMat(file)
+  data <- bms$BMS
+  # Likelihood
+  
+  like <- data[[1]][[1]][[4]]
+  # RFX analysis
+  
+  alpha <- data[[1]][[1]][[5]][,,1]$alpha
+  expect <- data[[1]][[1]][[5]][,,1]$exp.r
+  exceed <- data[[1]][[1]][[5]][,,1]$xp
+  pexceed <- data[[1]][[1]][[5]][,,1]$pxp
+  partial <- data.frame(Model = models, Alpha = c(alpha),
+                        Likelihood = c(like), Expected = c(expect),
+                        Exceedance = c(exceed), PExceedance = c(pexceed),
+                        Task = task)
+  
+  if (is.null(res)) {
+    res <- partial
+  } else {
+    res <- merge(res, partial, all=T)
+  }
+  res
+}
+
+generate.exp <- function(alphas, 
+                         mnames = paste("M", 1:length(alphas), sep=""), 
+                         res = 0.001) {
+  p <- seq(0, 1, res)
+  ii <- 1:length(alphas)
+  dd <- NULL
+  
+  for (i in ii) {
+    alpha <- alphas[i]
+    others <- sum(alphas[ii != i])  # Dirichlet dist is agglomerative
+    #print(c(alpha, others))   # Debug
+    
+    # Create the appropriate instantiation of the Dirichlet
+    # Functions with two alpha values (each model vs. the rest)
+    f <- function(x) {ddirichlet(c(x,  1 -x), alpha=c(alpha, others))}
+    vf <- Vectorize(f)
+    d <- vf(p)
+    d[is.na(d)] <- 0
+    dd <-cbind(dd, d)
+    #print(dim(dd))
+  }
+  colnames(dd) <- mnames
+  
+  # Return
+  dd
+}
+```
+
+Now, let's load the data:
+
+```{r}
+comparisons <- load.data("comparisons/BMS.mat")
+```
+
+We create the Relative Log-Likelihood measure and print the full table of measures:
+
+```{r}
+minL <- min(comparisons$Likelihood)
+
+comparisons <- comparisons %>%
+  mutate(RelativeLikelihood = Likelihood - minL)
+
+comparisons %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("hover", "striped"))
+```
+
+## Probability density distributions
+
+```{r}
+alphas <- comparisons$Alpha
+dists <- as.data.frame(generate.exp(alphas)/1000)
+
+
+names(dists) <- model.names
+
+wdists <- as_tibble(dists) %>%
+  add_column(Task = "Resting State",
+             Probability = seq(0, 1, 1/1000))
+
+ldists <- wdists %>%
+  pivot_longer(cols = model.names,
+                names_to = "Model",
+               values_to = "Density") 
+```
+
+And now, plot:
+
+```{r}
+ldists$Density[ldists$Density == Inf] <- 0
+ldist_summary <- ldists %>%
+  group_by(Model) %>%
+#  mutate(dXdY = Probability * Density * 1000) %>%
+  summarise(#Expected = mean(dXdY),
+            MaxDensity = max(Density))
+
+comparisons <- inner_join(comparisons, ldist_summary, keep=F)
+
+densityp <- ggplot(ldists, aes(x=Probability, 
+                               y = Density, 
+                               fill=Model, 
+                               col=Model)) +
+  geom_polygon(alpha=.5) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  geom_text_repel(data=comparisons, aes(x=Expected, 
+                                        y=MaxDensity, 
+                                        label=percent(Exceedance, accuracy = 0.1)),
+                  col="black") +
+  ggtitle("Resting State") +
+  theme_pander()
+
+densityp 
+```
+
+
+## Exceedance probabilities
+
+And now, the exceedance probabilities:
+
+```{r}
+ggplot(comparisons, aes(x="", y = Exceedance, fill=Model, col=Model)) +
+  geom_bar(stat = "identity", col="grey", width=1, alpha=.8) +
+  coord_polar("y", start=0) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 2L)) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Resting State") +
+  xlab("Exceedance Probabilities") +
+  ylab("Resting State") +
+  geom_text_repel(aes(label=percent(Exceedance, .1)), 
+                  col="white",
+                  position=position_stack(vjust=0.5), 
+                  direction="both",
+                  size=3) +
+  theme_pander() +
+  theme(axis.ticks = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.text.x = element_blank()) 
+
+```
+
+Same plot, but, this time, as stacked horizontal bars (like in the NeuroImage paper)
+
+```{r fig.width=6, fig.height=2}
+exceedancep <- 
+  ggplot(comparisons, aes(x=Task, y = Exceedance, fill=Model, col=Model)) +
+  geom_bar(stat = "identity",  
+           width = .5, alpha = .5) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 5L)) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Resting-State fMRI") +
+  xlab("Task") +
+  ylab("Exceedance Probabiliy") +
+  coord_flip() +
+  geom_text_repel(aes(label=percent(Exceedance, .1)), 
+                  col="black",
+                  position=position_stack(vjust=0.5), 
+                  direction="both",
+                  size=3) +
+  theme_pander() +
+  theme(legend.position = "bottom")
+
+exceedancep
+```
+
+And here we have a paper-worth combined figure:
+
+```{r, fig.width=5, fig.height=4}
+densityp + ggtitle("Architecture Comparison")  + 
+  theme(legend.position = "bottom") + 
+  guides(fill=guide_legend(ncol=2),
+         col=guide_legend(ncol=2))
+ggsave("figure8.png", dpi=300)
+```
+
+```{r fig.width=5, fig.height=4}
+
+logLp <- ggplot(comparisons, aes(x=Model, 
+                                 y = RelativeLikelihood, 
+                                 fill=Model,
+                                 col=Model)) +
+  geom_col(
+           width = .9, alpha = .5) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Architecture Comparison") +
+  xlab("Task") +
+  ylab("Relative Log-Likelihood") +
+  #coord_flip() +
+  geom_text(aes(label=round(RelativeLikelihood,1),
+                y = RelativeLikelihood + 150), 
+            col="black",
+#            position = position_stack(vjust=c(1)),
+            direction="both",
+            size=3) +
+  theme_pander() +
+  theme(axis.text.x = element_text(angle=45, hjust = c(1)),
+        legend.position = "NA")
+
+logLp
+ggsave("figure7.png")
+```
+
+## Resting State vs. Task Data
+
+```{r}
+model.names <- c("Common Model", 
+                 "Hierarchical 1", 
+                 "Hierarchical 2",
+                 "Hierarchical 3",
+                 "Hub-and-spoke PFC", 
+                 "Hub-and-spoke BG",
+                 "Hub-and-spoke Temporal"
+  )
+
+model_colors <- c("red3", 
+                  #"palegreen4", "palegreen3", "palegreen2",
+                  "goldenrod4", "goldenrod3", "goldenrod2",
+                  "deepskyblue4", "deepskyblue3", "deepskyblue2")
+
+folders <- c("Emotion", "Gambling", "Language", 
+             "Relational", "Social", "WM")
+
+task_names <- c("Emotion Recognition", 
+                "Incentive Processing", "Language and Math", 
+                "Relational Reasoning", "Social Cognition", 
+                "Working Memory")
+```
+
+
+Now, let's load the task data:
+
+```{r}
+res <- comparisons
+  
+for (task in folders) {
+  comparisons <- load.data(paste("../tfMRI/all_architectures/", task, "BMS.mat", sep="/"),
+                           task=task_names[folders==task])
+  if (is.null(res)) {
+    res <- comparisons
+  } else {
+    res <- merge(res, comparisons, all=T)
+  }
+}
+             
+res %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("hover", "striped"))
+```
+
+## Probability density distributions
+
+```{r}
+all_dists <- NULL
+for (task in c(task_names, "Resting State")) { 
+  comparisons <- filter(res, Task == task)
+  alphas <- comparisons$Alpha
+  dists <- as.data.frame(generate.exp(alphas)/1000)
+  
+  names(dists) <- model.names
+  
+  wdists <- as_tibble(dists) %>%
+    add_column(Task = task,
+               Probability = seq(0, 1, 1/1000))
+  
+  ldists <- wdists %>%
+    pivot_longer(cols = model.names,
+                 names_to = "Model",
+                 values_to = "Density") 
+  
+  if (is.null(all_dists)) {
+    all_dists <- ldists
+  }  else {
+    all_dists <- rbind(all_dists, ldists)
+  }
+}
+```
+
+And now, plot:
+
+```{r fig.width=6, fig.height=7}
+all_dists$Density[all_dists$Density == Inf] <- 0
+
+all_dist_summary <- all_dists %>%
+  group_by(Model, Task) %>%
+  summarize(MaxDensity = max(Density))
+
+res <- inner_join(res, all_dist_summary, keep=F)
+
+
+ggplot(filter(all_dists), 
+       aes(x=Probability, y = Density, 
+           fill=Model, col=Model)) +
+  geom_polygon(alpha = .5) +
+  facet_wrap(~ Task, ncol=3) +
+  coord_cartesian(ylim = c(0, 0.03)) +
+  scale_color_manual(values = model_colors) +
+  scale_fill_manual(values = model_colors) +
+  ggtitle("Comparison Across Task-Based and Resting State Data") +
+  geom_text_repel(data=res,
+                  aes(x = Expected, 
+                      y = MaxDensity, 
+                      label = percent(Exceedance, accuracy = 0.1)),
+                  color="black") +
+
+  theme_pander() +
+  theme(legend.position = "bottom") +
+  guides(fill=guide_legend(ncol=2),
+         col=guide_legend(ncol=2))
+
+```

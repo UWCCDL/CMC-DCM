@@ -139,3 +139,25 @@ summary(aov(Value ~ (Connection * TaskVsRest), lres)) %>%
   kable(digits = 3) %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 ```
+
+## How similar is Resting-State to Task based data?
+
+```{r}
+mres <- as.matrix(nres)
+R <- cor(t(mres))
+R[R==1] <- NA
+tR <- as_tibble(R)
+wR <- tR %>%
+  add_column(From = c(task_names, "Resting state"))
+lR <- wR %>%
+  pivot_longer(!From, names_to="To", values_to = "Correlation")
+```
+
+And now, visualize:
+
+```{r}
+ggplot(lR, aes(x=From, y=To, fill=Correlation)) +
+  geom_tile(col="white") +
+ # scale_fill_viridis_b(option="plasma") +
+  theme_pander()
+```
