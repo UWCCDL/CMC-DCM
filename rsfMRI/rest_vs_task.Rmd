@@ -147,17 +147,78 @@ mres <- as.matrix(nres)
 R <- cor(t(mres))
 R[R==1] <- NA
 tR <- as_tibble(R)
+names(tR) <- c(task_names, "Resting state")
 wR <- tR %>%
   add_column(From = c(task_names, "Resting state"))
 lR <- wR %>%
   pivot_longer(!From, names_to="To", values_to = "Correlation")
+
+wR   %>%
+  xtable() %>%
+  kable(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+lR   %>%
+  xtable() %>%
+  kable(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+lR$From <- factor(lR$From, levels=c(task_names, "Resting state"))
+lR$To <- factor(lR$To, levels=c(task_names, "Resting state"))
+
 ```
 
+
 And now, visualize:
+
 
 ```{r}
 ggplot(lR, aes(x=From, y=To, fill=Correlation)) +
   geom_tile(col="white") +
  # scale_fill_viridis_b(option="plasma") +
-  theme_pander()
+  theme_pander() +
+  scale_fill_viridis_c(option = "plasma") +
+  ggtitle("Parameter Correlations Across Tasks and Rest") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+And now, what is the mean correlation between one task and all the others? 
+
+```{r}
+withinTaskMeans <- lR %>%
+  filter(To != "Resting State") %>%
+  filter(From != "Resting state") %>%
+  group_by(To) %>%
+  summarise(meanR = mean(Correlation, na.rm=T))
+
+withinTaskMeans %>%
+  xtable() %>%
+  kable(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+
+restingStateMeans <- lR %>%
+  filter(From == "Resting state") %>%
+  filter(To != "Resting state") %>%
+  #group_by(To) %>%
+  summarise(meanR = mean(Correlation, na.rm=T))
+
+restingStateMeans %>%
+  xtable() %>%
+  kable(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+The mean correlation between tasks parameters is `r mean(withinTaskMeans$meanR)`, with range `r range(withinTaskMeans$meanR)`. The mean correlation of Resting State with task data is `r restingStateMeans`, which is well within the range.
+
+## Multidimensional scaling
+
+```{r}
+fit <- cmdscale(dist(nres))
+x <- fit[,1]
+y <- fit[,2]
+plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
+  main="Metric MDS", type="n")
+text(x, y, labels = c(task_names, "Resting state"), cex=.7)
 ```

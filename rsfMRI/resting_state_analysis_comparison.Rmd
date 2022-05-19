@@ -236,8 +236,9 @@ exceedancep
 And here we have a paper-worth combined figure:
 
 ```{r, fig.width=5, fig.height=4}
-densityp + ggtitle("Architecture Comparison")  + 
+densityp + ggtitle("Architecture Comparison, Random Effects")  + 
   theme(legend.position = "bottom") + 
+  labs(fill="Architecture", col="Architecture") +
   guides(fill=guide_legend(ncol=2),
          col=guide_legend(ncol=2))
 ggsave("figure8.png", dpi=300)
@@ -253,8 +254,8 @@ logLp <- ggplot(comparisons, aes(x=Model,
            width = .9, alpha = .5) +
   scale_color_manual(values = model_colors) +
   scale_fill_manual(values = model_colors) +
-  ggtitle("Architecture Comparison") +
-  xlab("Task") +
+  ggtitle("Architecture Comparison, Log-Likelihood") +
+  xlab("Architecture") +
   ylab("Relative Log-Likelihood") +
   #coord_flip() +
   geom_text(aes(label=round(RelativeLikelihood,1),
@@ -355,19 +356,25 @@ all_dist_summary <- all_dists %>%
   group_by(Model, Task) %>%
   summarize(MaxDensity = max(Density))
 
-res <- inner_join(res, all_dist_summary, keep=F)
+res$RelativeLikelihood <- NULL
+res$MaxDensity <- NULL
+sres <- inner_join(res, all_dist_summary, keep=F)
 
-
-ggplot(filter(all_dists), 
+all_dists$TaskName <- factor(all_dists$Task,
+                         levels = c(task_names, "Resting State"))
+#all_dists$Task <- all_dists$TaskName
+sres$TaskName <- factor(sres$Task, 
+                        levels = c(task_names, "Resting State"))
+ggplot(all_dists, 
        aes(x=Probability, y = Density, 
            fill=Model, col=Model)) +
   geom_polygon(alpha = .5) +
-  facet_wrap(~ Task, ncol=3) +
+  facet_wrap(~ TaskName, ncol=3) +
   coord_cartesian(ylim = c(0, 0.03)) +
   scale_color_manual(values = model_colors) +
   scale_fill_manual(values = model_colors) +
   ggtitle("Comparison Across Task-Based and Resting State Data") +
-  geom_text_repel(data=res,
+  geom_text_repel(data=sres,
                   aes(x = Expected, 
                       y = MaxDensity, 
                       label = percent(Exceedance, accuracy = 0.1)),
