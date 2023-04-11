@@ -18,3 +18,12 @@ These patterns are then translated into a neural network model using Dynamic Cau
 These network models can then be tested against a large repository of brain imaging data, the [Human Connectome Project](https://www.humanconnectome.org/)(HCP).
 
 The different folders in this repository describe a number of comparative analysis carried out on the HCP data.
+
+
+## Publications
+
+This project resulted in the following publications:
+
+* Stocco, A., Sibert, C., Steine-Hanson, Z., Koh, N., Laird, J. E., Lebiere, C. J., & Rosenbloom, P. (2021). Analysis of the human connectome data supports the notion of a “Common Model of Cognition” for human and human-like intelligence across domains. NeuroImage, 235, 118035.
+
+* Wapstra, N. J., Ketola, M., Thompson, S., Lee, A., Madhyastha, T., Grabowski, T. J., & Stocco, A. (2022). Increased Basal Ganglia Modulatory Effective Connectivity Observed in Resting-State fMRI in Individuals With Parkinson’s Disease. Frontiers in Aging Neuroscience, 14.
