@@ -185,11 +185,24 @@ ggplot(lR, aes(x=From, y=To, fill=Correlation)) +
 And now, what is the mean correlation between one task and all the others? 
 
 ```{r}
+
+r2z <- function(r) {
+  ((1 + r)/(1-r))/2
+}
+
+z2r <- function(z) {
+  (2 * z - 1) / (2 * z + 1)
+}
+
+lR <- lR %>%
+  mutate(Z = r2z( Correlation ))
+
 withinTaskMeans <- lR %>%
-  filter(To != "Resting State") %>%
+  filter(To != "Resting state") %>%
   filter(From != "Resting state") %>%
   group_by(To) %>%
-  summarise(meanR = mean(Correlation, na.rm=T))
+  summarise(meanZ=mean(Z, na.rm=T)) %>%
+  mutate(meanR = z2r(meanZ))
 
 withinTaskMeans %>%
   xtable() %>%
@@ -201,7 +214,8 @@ restingStateMeans <- lR %>%
   filter(From == "Resting state") %>%
   filter(To != "Resting state") %>%
   #group_by(To) %>%
-  summarise(meanR = mean(Correlation, na.rm=T))
+  summarise(meanZ= mean(Z, na.rm=T)) %>%
+  mutate(meanR = z2r(meanZ))
 
 restingStateMeans %>%
   xtable() %>%
@@ -210,7 +224,7 @@ restingStateMeans %>%
 
 ```
 
-The mean correlation between tasks parameters is `r mean(withinTaskMeans$meanR)`, with range `r range(withinTaskMeans$meanR)`. The mean correlation of Resting State with task data is `r restingStateMeans`, which is well within the range.
+The mean correlation between tasks parameters is `r z2r(mean(withinTaskMeans$meanZ))`, with range `r range(withinTaskMeans$meanR)`. The mean correlation of Resting State with task data is `r restingStateMeans$meanR`, which is well within the range.
 
 ## Multidimensional scaling
 
@@ -218,7 +232,27 @@ The mean correlation between tasks parameters is `r mean(withinTaskMeans$meanR)`
 fit <- cmdscale(dist(nres))
 x <- fit[,1]
 y <- fit[,2]
-plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
-  main="Metric MDS", type="n")
-text(x, y, labels = c(task_names, "Resting state"), cex=.7)
+#plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2",
+#  main="Metric MDS", type="n")
+#text(x, y, labels = c(task_names, "Resting state"), cex=.7)
+
+mds <- tibble(data.frame(X=x, Y=y, Paradigm = c(task_names, "Resting state")))
+```
+
+Let's visualize:
+
+```{r}
+ggplot(mds, aes(x=X, y=Y, col=Paradigm)) +
+  geom_point(size=3) +
+  xlim(-1, 2) +
+  ylim(-1, 2) +
+  xlab("Dimension 1") +
+  ylab("Dimension 2") +
+  scale_color_d3() +
+  ggtitle("Multi-Dimensional Scaling\nof Connectivity Parameters") +
+  geom_text_repel(aes(label = Paradigm)) +
+  theme_pander() +
+  coord_equal() +
+  theme(legend.position = "NA")
+ggsave("figure12.png")
 ```
