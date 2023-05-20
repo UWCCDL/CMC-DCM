@@ -1,6 +1,6 @@
 # Testing the Common Model of Cognition as a Brain Architecture
 
-This project aims to examine the feasibility of the Common Model of Cognition as a feasibile, high-level brain architecture. It is a joint project carried out with [John Laird](https://laird.engin.umich.edu/) of the University of Michigan, Christian Lebiere of Carnegie Mellon University, and [Paul Rosenbloom](https://viterbi.usc.edu/directory/faculty/Rosenbloom/Paul) of the University of Southern California.   
+This project aims to examine the feasibility of the Common Model of Cognition as a feasibile, high-level brain architecture. It is a joint project carried out with [John Laird](https://laird.engin.umich.edu/) of the University of Michigan, Christian Lebiere of Carnegie Mellon University, and [Paul Rosenbloom](https://viterbi.usc.edu/directory/faculty/Rosenbloom/Paul) of the University of Southern California, and funded by the Air Force Office of Scientific Research.
 
 ## The Common Model of Cognition
 
@@ -19,7 +19,6 @@ These network models can then be tested against a large repository of brain imag
 
 The different folders in this repository describe a number of comparative analysis carried out on the HCP data.
 
-
 ## Publications
 
 This project resulted in the following publications:
@@ -29,8 +28,9 @@ This project resulted in the following publications:
 * Hake, H. S., Sibert, C., & Stocco, A. (2022). Inferring a Cognitive Architecture from Multitask Neuroimaging Data: A Data‐Driven Test of the Common Model of Cognition Using Granger Causality. _Topics in Cognitive Science, 14_(4), 845-859.
 * Sibert, C. L., Hake, H. S., & Stocco, A. (2022). The structured mind at rest: Low-frequency oscillations reflect interactive dynamics between spontaneous brain activity and a common architecture for task control. _Frontiers in Neuroscience 16_, 832503. 
 * Wapstra, N. J., Ketola, M., Thompson, S., Lee, A., Madhyastha, T., Grabowski, T. J., & Stocco, A. (2022). Increased Basal Ganglia Modulatory Effective Connectivity Observed in Resting-State fMRI in Individuals With Parkinson’s Disease. Frontiers in Aging Neuroscience, 14.
-* Stocco, A., Sibert, C., Steine-Hanson, Z., Koh, N., Laird, J. E., Lebiere, C. J., & Rosenbloom, P. (2021). Analysis of the human connectome data supports the notion of a “Common Model of Cognition” for human and human-like intelligence across domains. _NeuroImage, 235_, 118035.
 * Wapstra, N. J., Ketola, M., Thompson, S., Lee, A., Madhyastha, T., Grabowski, T. J., & Stocco, A. (2022). Increased Basal Ganglia Modulatory Effective Connectivity Observed in Resting-State fMRI in Individuals With Parkinson’s Disease. _Frontiers in Aging Neuroscience, 14_.
+* Stocco, A., Sibert, C., Steine-Hanson, Z., Koh, N., Laird, J. E., Lebiere, C. J., & Rosenbloom, P. (2021). Analysis of the human connectome data supports the notion of a “Common Model of Cognition” for human and human-like intelligence across domains. _NeuroImage, 235_, 118035.
+* Stocco, A. (2021). Qualitative invariant effects arise from neural constraints: Common architecture and sources of individual differences. _Journal of Cognition_, 4(1), 53.
 
 ### Conference Proceedings
 
